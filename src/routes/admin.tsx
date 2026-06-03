@@ -130,7 +130,7 @@ function BookingsTab() {
     },
   });
 
-  async function updateStatus(id: string, status: string) {
+  async function updateStatus(id: string, status: "pending" | "approved" | "rejected" | "cancelled" | "completed") {
     const { error } = await supabase.from("bookings").update({ status }).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(`Booking ${status}`);
@@ -283,7 +283,7 @@ function PaymentsTab() {
     },
   });
 
-  async function updateStatus(id: string, status: string) {
+  async function updateStatus(id: string, status: "pending" | "verified" | "rejected") {
     const { error } = await supabase.from("payments").update({ status }).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Payment updated");
