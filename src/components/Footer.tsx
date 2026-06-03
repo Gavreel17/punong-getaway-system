@@ -1,0 +1,35 @@
+import { Palmtree, MapPin, Phone, Mail } from "lucide-react";
+
+export function Footer() {
+  return (
+    <footer className="border-t border-border bg-secondary/40">
+      <div className="container mx-auto grid gap-8 px-4 py-12 md:grid-cols-4">
+        <div>
+          <div className="flex items-center gap-2 font-display text-lg font-bold text-primary">
+            <Palmtree className="h-5 w-5 text-accent" />
+            Punong Resort
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground">Relax, Reserve, and Enjoy Your Stay in tropical paradise.</p>
+        </div>
+        <div>
+          <h4 className="mb-3 text-sm font-semibold">Visit Us</h4>
+          <p className="flex items-start gap-2 text-sm text-muted-foreground"><MapPin className="mt-0.5 h-4 w-4" /> Coastal Road, Palawan, Philippines</p>
+        </div>
+        <div>
+          <h4 className="mb-3 text-sm font-semibold">Contact</h4>
+          <p className="flex items-center gap-2 text-sm text-muted-foreground"><Phone className="h-4 w-4" /> +63 917 123 4567</p>
+          <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground"><Mail className="h-4 w-4" /> hello@punongresort.com</p>
+        </div>
+        <div>
+          <h4 className="mb-3 text-sm font-semibold">Hours</h4>
+          <p className="text-sm text-muted-foreground">Front desk: 24/7</p>
+          <p className="text-sm text-muted-foreground">Check-in: 2:00 PM</p>
+          <p className="text-sm text-muted-foreground">Check-out: 12:00 PM</p>
+        </div>
+      </div>
+      <div className="border-t border-border py-4 text-center text-xs text-muted-foreground">
+        © {new Date().getFullYear()} Punong Resort. All rights reserved.
+      </div>
+    </footer>
+  );
+}
