@@ -1,0 +1,154 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Waves, Utensils, Sparkles, Wifi, Car, Coffee, MapPin, Star } from "lucide-react";
+import hero from "@/assets/hero-resort.jpg";
+import galleryPool from "@/assets/gallery-pool.jpg";
+import galleryDining from "@/assets/gallery-dining.jpg";
+import gallerySpa from "@/assets/gallery-spa.jpg";
+
+export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Punong Resort — Relax, Reserve, and Enjoy Your Stay" },
+      { name: "description", content: "Book your tropical getaway at Punong Resort. Beachfront rooms, cottages and pool villas in BUBURAY, DIMATALING ZAMBOANGA DEL SUR." },
+      { property: "og:title", content: "Punong Resort" },
+      { property: "og:description", content: "Beachfront paradise. Book rooms, cottages and villas online." },
+    ],
+  }),
+  component: Index,
+});
+
+const amenities = [
+  { icon: Waves, title: "Infinity Pool", desc: "Ocean-view pool open from dawn to dusk." },
+  { icon: Utensils, title: "Beachfront Dining", desc: "Fresh seafood and tropical cocktails." },
+  { icon: Sparkles, title: "Spa & Wellness", desc: "Traditional Filipino massage rituals." },
+  { icon: Wifi, title: "Free WiFi", desc: "High-speed internet across the resort." },
+  { icon: Car, title: "Airport Transfer", desc: "Complimentary pickup on arrival." },
+  { icon: Coffee, title: "Daily Breakfast", desc: "Buffet breakfast included with stays." },
+];
+
+const testimonials = [
+  { name: "Maria Santos", quote: "The most peaceful stay we've had. Staff were incredible.", rating: 5 },
+  { name: "James Lee", quote: "Stunning views and the food was unforgettable.", rating: 5 },
+  { name: "Anna Cruz", quote: "Booking was easy and the cottage exceeded expectations.", rating: 5 },
+];
+
+function Index() {
+  return (
+    <div className="min-h-screen">
+      <Navbar />
+
+      {/* Hero */}
+      <section className="relative h-[88vh] min-h-[600px] w-full overflow-hidden">
+        <img src={hero} alt="Punong Resort beachfront at sunset" className="absolute inset-0 h-full w-full object-cover" width={1920} height={1280} />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/60" />
+        <div className="relative z-10 mx-auto flex h-full max-w-4xl flex-col items-center justify-center px-4 text-center text-white">
+          <p className="mb-4 text-sm uppercase tracking-[0.3em] text-white/80">BUBURAY, DIMATALING ZAMBOANGA DEL SUR</p>
+          <h1 className="font-display text-5xl font-bold leading-tight md:text-7xl">Punong Resort</h1>
+          <p className="mt-4 text-lg italic text-white/90 md:text-2xl">Relax, Reserve, and Enjoy Your Stay</p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 shadow-elegant">
+              <Link to="/rooms">Book Now</Link>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="border-white/60 bg-white/10 text-white backdrop-blur hover:bg-white/20">
+              <Link to="/about">Explore Resort</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Amenities */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto mb-12 max-w-2xl text-center">
+            <p className="text-sm uppercase tracking-widest text-accent">Featured Amenities</p>
+            <h2 className="mt-2 text-4xl font-bold">Everything you need to unwind</h2>
+          </div>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {amenities.map(a => (
+              <Card key={a.title} className="group border-border/60 p-6 transition-all hover:-translate-y-1 hover:shadow-elegant">
+                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-secondary text-primary group-hover:bg-accent group-hover:text-accent-foreground transition-colors">
+                  <a.icon className="h-6 w-6" />
+                </div>
+                <h3 className="text-lg font-semibold">{a.title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{a.desc}</p>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Gallery */}
+      <section className="bg-secondary/40 py-20">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto mb-12 max-w-2xl text-center">
+            <p className="text-sm uppercase tracking-widest text-accent">Gallery</p>
+            <h2 className="mt-2 text-4xl font-bold">A glimpse of paradise</h2>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {[
+              { src: galleryPool, alt: "Infinity pool at sunset" },
+              { src: galleryDining, alt: "Beachfront dining" },
+              { src: gallerySpa, alt: "Spa treatment room" },
+            ].map(g => (
+              <div key={g.alt} className="group relative aspect-square overflow-hidden rounded-2xl">
+                <img src={g.src} alt={g.alt} loading="lazy" width={1024} height={1024}
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto mb-12 max-w-2xl text-center">
+            <p className="text-sm uppercase tracking-widest text-accent">Guest Stories</p>
+            <h2 className="mt-2 text-4xl font-bold">Loved by our guests</h2>
+          </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            {testimonials.map(t => (
+              <Card key={t.name} className="border-border/60 p-6">
+                <div className="mb-3 flex gap-1 text-accent">
+                  {Array.from({ length: t.rating }).map((_, i) => <Star key={i} className="h-4 w-4 fill-current" />)}
+                </div>
+                <p className="text-foreground/90">"{t.quote}"</p>
+                <p className="mt-4 text-sm font-semibold">— {t.name}</p>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Contact / Location */}
+      <section className="bg-[image:var(--gradient-hero)] py-20 text-white">
+        <div className="container mx-auto grid gap-12 px-4 md:grid-cols-2 md:items-center">
+          <div>
+            <h2 className="text-4xl font-bold">Find your way to us</h2>
+            <p className="mt-4 text-white/90">Tucked between palm groves and powdery white sand on BUBURAY, DIMATALING ZAMBOANGA DEL SUR's coast.</p>
+            <div className="mt-6 space-y-3 text-white/90">
+              <p className="flex items-center gap-3"><MapPin className="h-5 w-5" /> Coastal Road, BUBURAY, DIMATALING ZAMBOANGA DEL SUR</p>
+            </div>
+            <Button asChild size="lg" className="mt-8 bg-accent text-accent-foreground hover:bg-accent/90">
+              <Link to="/rooms">Reserve Your Stay</Link>
+            </Button>
+          </div>
+          <div className="overflow-hidden rounded-2xl shadow-elegant">
+            <iframe
+              title="Location map"
+              src="https://www.openstreetmap.org/export/embed.html?bbox=118.6%2C9.6%2C119.0%2C9.9&layer=mapnik"
+              className="h-80 w-full border-0"
+              loading="lazy"
+            />
+          </div>
+        </div>
+      </section>
+
+      <Footer />
+    </div>
+  );
+}
