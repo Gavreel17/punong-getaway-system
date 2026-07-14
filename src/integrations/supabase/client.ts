@@ -1,166 +1,166 @@
 // Client-side local storage mock database helpers
 const getMockData = (table: string): any[] => {
-  if (typeof window === 'undefined') return [];
+  if (typeof window === "undefined") return [];
   const stored = localStorage.getItem(`mock_db_${table}`);
   if (stored) return JSON.parse(stored);
 
   // Initialize with realistic seed data
   let initialData: any[] = [];
-  if (table === 'rooms') {
+  if (table === "rooms") {
     initialData = [
       {
-        id: 'room-1',
-        name: 'Deluxe Pool Villa',
-        type: 'villa',
-        description: 'Spacious pool villa with beachfront access and luxurious amenities.',
+        id: "room-1",
+        name: "Deluxe Function Hall",
+        type: "villa",
+        description: "Spacious function hall with beautiful views and excellent amenities.",
         price: 12000,
-        capacity: 4,
-        image_url: 'https://images.unsplash.com/photo-1540541338287-41700207dee6',
+        capacity: "4",
+        image_url: "https://images.unsplash.com/photo-1540541338287-41700207dee6",
         is_available: true,
-        status: 'available',
+        status: "available",
         maintenance_start: null,
         maintenance_end: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
       {
-        id: 'room-2',
-        name: 'Beachfront Cottage',
-        type: 'cottage',
-        description: 'Charming traditional cottage situated right on the powdery white sand.',
+        id: "room-2",
+        name: "Beachfront Cottage",
+        type: "cottage",
+        description: "Charming traditional cottage situated right on the powdery white sand.",
         price: 6500,
-        capacity: 2,
-        image_url: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d',
+        capacity: "2",
+        image_url: "https://images.unsplash.com/photo-1571896349842-33c89424de2d",
         is_available: true,
-        status: 'available',
+        status: "available",
         maintenance_start: null,
         maintenance_end: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
       {
-        id: 'room-3',
-        name: 'Garden View Room',
-        type: 'room',
-        description: 'Cozy room overlooking our lush tropical gardens.',
+        id: "room-3",
+        name: "Garden View Room",
+        type: "room",
+        description: "Cozy room overlooking our lush tropical gardens.",
         price: 4000,
-        capacity: 2,
-        image_url: 'https://images.unsplash.com/photo-1566073771259-6a8506099945',
+        capacity: "2",
+        image_url: "https://images.unsplash.com/photo-1566073771259-6a8506099945",
         is_available: true,
-        status: 'available',
+        status: "available",
         maintenance_start: null,
         maintenance_end: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
     ];
-  } else if (table === 'profiles') {
+  } else if (table === "profiles") {
     initialData = [
       {
-        id: 'mock-admin-id',
-        fullname: 'Mock Admin',
-        email: 'admin@punongresort.com',
-        phone: '+63 917 123 4567',
+        id: "mock-admin-id",
+        fullname: "Mock Admin",
+        email: "admin@punongresort.com",
+        phone: "+63 917 123 4567",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
       {
-        id: 'user-1',
-        fullname: 'John Doe',
-        email: 'john@example.com',
-        phone: '+63 917 111 2222',
+        id: "user-1",
+        fullname: "John Doe",
+        email: "john@example.com",
+        phone: "+63 917 111 2222",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
       {
-        id: 'user-2',
-        fullname: 'Jane Smith',
-        email: 'jane@example.com',
-        phone: '+63 917 333 4444',
+        id: "user-2",
+        fullname: "Jane Smith",
+        email: "jane@example.com",
+        phone: "+63 917 333 4444",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
     ];
-  } else if (table === 'bookings') {
+  } else if (table === "bookings") {
     initialData = [
       {
-        id: 'b-1',
-        user_id: 'user-1',
-        room_id: 'room-1',
-        guest_name: 'John Doe',
-        guest_email: 'john@example.com',
-        guest_phone: '+63 917 111 2222',
-        check_in: '2026-06-15',
-        check_out: '2026-06-18',
+        id: "b-1",
+        user_id: "user-1",
+        room_id: "room-1",
+        guest_name: "John Doe",
+        guest_email: "john@example.com",
+        guest_phone: "+63 917 111 2222",
+        check_in: "2026-06-15",
+        check_out: "2026-06-18",
         guests: 3,
         total_amount: 36000,
-        status: 'approved',
-        booking_status: 'approved',
-        reservation_color: 'blue',
+        status: "approved",
+        booking_status: "approved",
+        reservation_color: "blue",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
       {
-        id: 'b-2',
-        user_id: 'user-2',
-        room_id: 'room-2',
-        guest_name: 'Jane Smith',
-        guest_email: 'jane@example.com',
-        guest_phone: '+63 917 333 4444',
-        check_in: '2026-07-01',
-        check_out: '2026-07-03',
+        id: "b-2",
+        user_id: "user-2",
+        room_id: "room-2",
+        guest_name: "Jane Smith",
+        guest_email: "jane@example.com",
+        guest_phone: "+63 917 333 4444",
+        check_in: "2026-07-01",
+        check_out: "2026-07-03",
         guests: 2,
         total_amount: 13000,
-        status: 'pending',
-        booking_status: 'pending',
-        reservation_color: 'yellow',
+        status: "pending",
+        booking_status: "pending",
+        reservation_color: "yellow",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
     ];
-  } else if (table === 'payments') {
+  } else if (table === "payments") {
     initialData = [
       {
-        id: 'p-1',
-        booking_id: 'b-1',
-        user_id: 'user-1',
+        id: "p-1",
+        booking_id: "b-1",
+        user_id: "user-1",
         amount: 36000,
-        receipt_url: '',
-        status: 'verified',
+        receipt_url: "",
+        status: "verified",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
       {
-        id: 'p-2',
-        booking_id: 'b-2',
-        user_id: 'user-2',
+        id: "p-2",
+        booking_id: "b-2",
+        user_id: "user-2",
         amount: 13000,
-        receipt_url: '',
-        status: 'pending',
+        receipt_url: "",
+        status: "pending",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
     ];
-  } else if (table === 'resort_blocks') {
+  } else if (table === "resort_blocks") {
     initialData = [];
-  } else if (table === 'user_roles') {
+  } else if (table === "user_roles") {
     initialData = [
       {
-        id: 'ur-1',
-        user_id: 'mock-admin-id',
-        role: 'admin',
+        id: "ur-1",
+        user_id: "mock-admin-id",
+        role: "admin",
         created_at: new Date().toISOString(),
       },
       {
-        id: 'ur-2',
-        user_id: 'user-1',
-        role: 'customer',
+        id: "ur-2",
+        user_id: "user-1",
+        role: "customer",
         created_at: new Date().toISOString(),
       },
       {
-        id: 'ur-3',
-        user_id: 'user-2',
-        role: 'customer',
+        id: "ur-3",
+        user_id: "user-2",
+        role: "customer",
         created_at: new Date().toISOString(),
       },
     ];
@@ -171,31 +171,36 @@ const getMockData = (table: string): any[] => {
 };
 
 const saveMockData = (table: string, data: any[]) => {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
   localStorage.setItem(`mock_db_${table}`, JSON.stringify(data));
 };
 
 const resolveRelationships = (table: string, data: any[], query: string) => {
-  if (table === 'bookings' && query.includes('room')) {
-    const rooms = getMockData('rooms');
-    const profiles = getMockData('profiles');
-    return data.map(b => ({
+  if (table === "bookings" && query.includes("room")) {
+    const rooms = getMockData("rooms");
+    const profiles = getMockData("profiles");
+    const payments = getMockData("payments");
+    return data.map((b) => ({
       ...b,
-      room: rooms.find((r: any) => r.id === b.room_id) || { name: 'Unknown Room' },
-      profile: profiles.find((p: any) => p.id === b.user_id) || { fullname: b.guest_name, email: b.guest_email },
+      room: rooms.find((r: any) => r.id === b.room_id) || { name: "Unknown Room" },
+      profile: profiles.find((p: any) => p.id === b.user_id) || {
+        fullname: b.guest_name,
+        email: b.guest_email,
+      },
+      payments: payments.filter((p: any) => p.booking_id === b.id)
     }));
   }
-  if (table === 'payments' && query.includes('booking')) {
-    const bookings = getMockData('bookings');
-    const rooms = getMockData('rooms');
-    return data.map(p => {
+  if (table === "payments" && query.includes("booking")) {
+    const bookings = getMockData("bookings");
+    const rooms = getMockData("rooms");
+    return data.map((p) => {
       const b = bookings.find((bk: any) => bk.id === p.booking_id) || {};
       return {
         ...p,
         booking: {
           ...b,
-          guest_name: b.guest_name || 'Unknown Guest',
-          room: rooms.find((r: any) => r.id === b.room_id) || { name: 'Unknown Room' },
+          guest_name: b.guest_name || "Unknown Guest",
+          room: rooms.find((r: any) => r.id === b.room_id) || { name: "Unknown Room" },
         },
       };
     });
@@ -209,7 +214,7 @@ class MockQueryBuilder {
     this.table = table;
   }
 
-  select(query: string = '*') {
+  select(query: string = "*") {
     let data = getMockData(this.table);
     data = resolveRelationships(this.table, data, query);
 
@@ -232,6 +237,26 @@ class MockQueryBuilder {
         Object.assign(finalPromise, builder);
         return finalPromise;
       },
+      is: (field: string, value: any) => {
+        if (value === null) {
+          data = data.filter((x: any) => x[field] === null || x[field] === undefined);
+        } else {
+          data = data.filter((x: any) => x[field] === value);
+        }
+        const finalPromise = Promise.resolve({ data, error: null });
+        Object.assign(finalPromise, builder);
+        return finalPromise;
+      },
+      not: (field: string, operator: string, value: any) => {
+        if (operator === "is" && value === null) {
+          data = data.filter((x: any) => x[field] !== null && x[field] !== undefined);
+        } else if (operator === "eq") {
+          data = data.filter((x: any) => x[field] !== value);
+        }
+        const finalPromise = Promise.resolve({ data, error: null });
+        Object.assign(finalPromise, builder);
+        return finalPromise;
+      },
       single: () => {
         const item = data.length > 0 ? data[0] : null;
         return Promise.resolve({ data: item, error: item ? null : { message: "Not found" } });
@@ -246,12 +271,13 @@ class MockQueryBuilder {
     const data = getMockData(this.table);
 
     let payloads = Array.isArray(payload) ? payload : [payload];
-    const newRecords = payloads.map(p => {
+    const newRecords = payloads.map((p) => {
       let finalPayload = { ...p };
-      if (this.table === 'bookings' && finalPayload.status) {
-        if (finalPayload.status === 'pending') finalPayload.reservation_color = 'yellow';
-        else if (finalPayload.status === 'approved') finalPayload.reservation_color = 'blue';
-        else if (finalPayload.status === 'rejected' || finalPayload.status === 'cancelled') finalPayload.reservation_color = 'red';
+      if (this.table === "bookings" && finalPayload.status) {
+        if (finalPayload.status === "pending") finalPayload.reservation_color = "yellow";
+        else if (finalPayload.status === "approved") finalPayload.reservation_color = "blue";
+        else if (finalPayload.status === "rejected" || finalPayload.status === "cancelled")
+          finalPayload.reservation_color = "red";
         finalPayload.booking_status = finalPayload.status;
       }
       return {
@@ -264,7 +290,17 @@ class MockQueryBuilder {
 
     data.unshift(...newRecords);
     saveMockData(this.table, data);
-    return Promise.resolve({ data: Array.isArray(payload) ? newRecords : newRecords[0], error: null });
+
+    const result = { data: Array.isArray(payload) ? newRecords : newRecords[0], error: null };
+    const promise = Promise.resolve(result);
+
+    const builder: any = {
+      select: () => builder,
+      single: () => Promise.resolve({ data: newRecords[0], error: null }),
+      then: promise.then.bind(promise),
+      catch: promise.catch.bind(promise),
+    };
+    return builder;
   }
 
   update(payload: any) {
@@ -274,17 +310,26 @@ class MockQueryBuilder {
         data.forEach((x: any) => {
           if (x[field] === value) {
             let finalPayload = { ...payload };
-            if (this.table === 'bookings' && finalPayload.status) {
-              if (finalPayload.status === 'pending') finalPayload.reservation_color = 'yellow';
-              else if (finalPayload.status === 'approved') finalPayload.reservation_color = 'blue';
-              else if (finalPayload.status === 'rejected' || finalPayload.status === 'cancelled') finalPayload.reservation_color = 'red';
+            if (this.table === "bookings" && finalPayload.status) {
+              if (finalPayload.status === "pending") finalPayload.reservation_color = "yellow";
+              else if (finalPayload.status === "approved") finalPayload.reservation_color = "blue";
+              else if (finalPayload.status === "rejected" || finalPayload.status === "cancelled")
+                finalPayload.reservation_color = "red";
               finalPayload.booking_status = finalPayload.status;
             }
             Object.assign(x, finalPayload, { updated_at: new Date().toISOString() });
           }
         });
         saveMockData(this.table, data);
-        return Promise.resolve({ data, error: null });
+
+        const promise = Promise.resolve({ data, error: null });
+        const builder: any = {
+          select: () => builder,
+          single: () => Promise.resolve({ data: data.length > 0 ? data[0] : null, error: null }),
+          then: promise.then.bind(promise),
+          catch: promise.catch.bind(promise),
+        };
+        return builder;
       },
     };
   }
@@ -295,7 +340,15 @@ class MockQueryBuilder {
         let data = getMockData(this.table);
         data = data.filter((x: any) => x[field] !== value);
         saveMockData(this.table, data);
-        return Promise.resolve({ data, error: null });
+
+        const promise = Promise.resolve({ data, error: null });
+        const builder: any = {
+          select: () => builder,
+          single: () => Promise.resolve({ data: null, error: null }),
+          then: promise.then.bind(promise),
+          catch: promise.catch.bind(promise),
+        };
+        return builder;
       },
     };
   }
@@ -305,12 +358,15 @@ class MockAuth {
   private listeners: ((event: string, session: any | null) => void)[] = [];
 
   async signInWithPassword(credentials: { email: string; password?: string }) {
-    if (typeof window === 'undefined') return { data: { user: null, session: null }, error: new Error("Window undefined") };
-    
+    if (typeof window === "undefined")
+      return { data: { user: null, session: null }, error: new Error("Window undefined") };
+
     // Find matching profile
-    const profiles = getMockData('profiles');
-    const profile = profiles.find((p: any) => p.email.toLowerCase() === credentials.email.toLowerCase());
-    
+    const profiles = getMockData("profiles");
+    const profile = profiles.find(
+      (p: any) => p.email.toLowerCase() === credentials.email.toLowerCase(),
+    );
+
     if (!profile) {
       return { data: { user: null, session: null }, error: new Error("Invalid login credentials") };
     }
@@ -331,25 +387,28 @@ class MockAuth {
       token_type: "bearer",
     };
 
-    localStorage.setItem('mock_session', JSON.stringify(mockSession));
-    this.notify('SIGNED_IN', mockSession);
+    localStorage.setItem("mock_session", JSON.stringify(mockSession));
+    this.notify("SIGNED_IN", mockSession);
 
     return { data: { user: mockUser, session: mockSession }, error: null };
   }
 
   async signUp(options: { email: string; password?: string; options?: { data?: any } }) {
-    if (typeof window === 'undefined') return { data: { user: null, session: null }, error: new Error("Window undefined") };
-    
-    const profiles = getMockData('profiles');
-    const existing = profiles.find((p: any) => p.email.toLowerCase() === options.email.toLowerCase());
+    if (typeof window === "undefined")
+      return { data: { user: null, session: null }, error: new Error("Window undefined") };
+
+    const profiles = getMockData("profiles");
+    const existing = profiles.find(
+      (p: any) => p.email.toLowerCase() === options.email.toLowerCase(),
+    );
     if (existing) {
       return { data: { user: null, session: null }, error: new Error("User already exists") };
     }
 
-    const newId = 'user-' + Math.random().toString(36).substring(2, 11);
+    const newId = "user-" + Math.random().toString(36).substring(2, 11);
     const newProfile = {
       id: newId,
-      fullname: options.options?.data?.fullname || options.email.split('@')[0],
+      fullname: options.options?.data?.fullname || options.email.split("@")[0],
       email: options.email,
       phone: options.options?.data?.phone || "",
       created_at: new Date().toISOString(),
@@ -357,17 +416,17 @@ class MockAuth {
     };
 
     profiles.push(newProfile);
-    saveMockData('profiles', profiles);
+    saveMockData("profiles", profiles);
 
     // Save default role as customer
-    const userRoles = getMockData('user_roles');
+    const userRoles = getMockData("user_roles");
     userRoles.push({
-      id: 'role-' + Math.random().toString(36).substring(2, 11),
+      id: "role-" + Math.random().toString(36).substring(2, 11),
       user_id: newId,
-      role: 'customer',
+      role: "customer",
       created_at: new Date().toISOString(),
     });
-    saveMockData('user_roles', userRoles);
+    saveMockData("user_roles", userRoles);
 
     const mockUser = {
       id: newId,
@@ -385,35 +444,35 @@ class MockAuth {
       token_type: "bearer",
     };
 
-    localStorage.setItem('mock_session', JSON.stringify(mockSession));
-    this.notify('SIGNED_IN', mockSession);
+    localStorage.setItem("mock_session", JSON.stringify(mockSession));
+    this.notify("SIGNED_IN", mockSession);
 
     return { data: { user: mockUser, session: mockSession }, error: null };
   }
 
   async signOut() {
-    if (typeof window === 'undefined') return { error: null };
-    localStorage.removeItem('mock_session');
-    this.notify('SIGNED_OUT', null);
+    if (typeof window === "undefined") return { error: null };
+    localStorage.removeItem("mock_session");
+    this.notify("SIGNED_OUT", null);
     return { error: null };
   }
 
   async getSession() {
-    if (typeof window === 'undefined') return { data: { session: null }, error: null };
-    const stored = localStorage.getItem('mock_session');
+    if (typeof window === "undefined") return { data: { session: null }, error: null };
+    const stored = localStorage.getItem("mock_session");
     return { data: { session: stored ? JSON.parse(stored) : null }, error: null };
   }
 
   onAuthStateChange(callback: (event: string, session: any | null) => void) {
     this.listeners.push(callback);
-    
+
     // Immediately send current session
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('mock_session');
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("mock_session");
       if (stored) {
-        callback('INITIAL_SESSION', JSON.parse(stored));
+        callback("INITIAL_SESSION", JSON.parse(stored));
       } else {
-        callback('INITIAL_SESSION', null);
+        callback("INITIAL_SESSION", null);
       }
     }
 
@@ -421,16 +480,16 @@ class MockAuth {
       data: {
         subscription: {
           unsubscribe: () => {
-            this.listeners = this.listeners.filter(l => l !== callback);
-          }
-        }
-      }
+            this.listeners = this.listeners.filter((l) => l !== callback);
+          },
+        },
+      },
     };
   }
 
   private notify(event: string, session: any | null) {
     setTimeout(() => {
-      this.listeners.forEach(l => l(event, session));
+      this.listeners.forEach((l) => l(event, session));
     }, 0);
   }
 }
@@ -441,4 +500,10 @@ const mockAuthInstance = new MockAuth();
 export const supabase: any = {
   from: (table: string) => new MockQueryBuilder(table),
   auth: mockAuthInstance,
+  functions: {
+    invoke: (functionName: string, options?: any) => {
+      console.log(`Mock invoked function: ${functionName}`, options);
+      return Promise.resolve({ data: { success: true }, error: null });
+    },
+  },
 };

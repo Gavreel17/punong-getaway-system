@@ -8,13 +8,13 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { 
-  Users, 
-  CalendarCheck, 
-  DollarSign, 
-  Database, 
-  Key, 
-  Copy, 
+import {
+  Users,
+  CalendarCheck,
+  PhilippinePeso,
+  Database,
+  Key,
+  Copy,
   Percent,
   Calendar as CalendarIcon,
   Bed,
@@ -22,13 +22,17 @@ import {
   LogOut,
   Home,
   Menu,
-  X
+  X,
+  FileText,
+  Settings2,
+  LayoutDashboard,
+  BedDouble,
 } from "lucide-react";
 import { makeAdmin } from "@/lib/api/example.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin")({
-  head: () => ({ meta: [{ title: "Admin — Punong Resort" }] }),
+  head: () => ({ meta: [{ title: "Admin — Punong Spring Resort" }] }),
   component: AdminLayout,
 });
 
@@ -55,9 +59,18 @@ function AdminLayout() {
     }
   }, [user, role, loading, navigate]);
 
-  // Handle the make admin utility silently or remove it since we added Admin Registration
-  // For safety, we keep handleMakeAdmin logic if it's used elsewhere, but remove the UI.
-  
+  const { data: pendingPaymentsCount } = useQuery({
+    queryKey: ["pending-payments-count"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("payments")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+      return count || 0;
+    },
+    refetchInterval: 30000,
+  });
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard!");
@@ -75,23 +88,27 @@ function AdminLayout() {
   }
 
   const links = [
+    { title: "Dashboard", to: "/admin", icon: LayoutDashboard },
     { to: "/admin/calendar", label: "Calendar", icon: CalendarIcon },
-    { to: "/admin/bookings", label: "Bookings", icon: CalendarCheck },
-    { to: "/admin/rooms", label: "Rooms", icon: Bed },
-    { to: "/admin/payments", label: "Payments", icon: CreditCard },
+    { to: "/admin/bookings", label: "Bookings & Payments", icon: CalendarCheck },
+    { to: "/admin/cancellations", label: "Cancellations", icon: CalendarCheck },
+    { to: "/admin/rooms", label: "Rooms & Cottages", icon: BedDouble },
+
     { to: "/admin/customers", label: "Customers", icon: Users },
+    { to: "/admin/reports", label: "Reports", icon: FileText },
   ];
 
-  const currentLink = links.find(link => location.pathname === link.to) || links[0];
+  const currentLink = links.find((link) => location.pathname === link.to) || links[0];
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 text-slate-900 w-full">
-      
       {/* Sidebar for Desktop */}
       <aside className="hidden md:flex md:w-64 md:flex-col bg-slate-900 text-slate-100 border-r border-slate-800">
         <div className="flex h-16 items-center gap-2 px-6 border-b border-slate-800 bg-slate-950">
-          <Database className="h-6 w-6 text-accent" />
-          <span className="font-display text-lg font-bold tracking-wider text-slate-100">Punong Admin</span>
+          <img src="/logo.png" alt="Punong Logo" className="h-8 w-8 object-contain rounded-full bg-white/10 p-0.5" />
+          <span className="font-display text-lg font-bold tracking-wider text-slate-100">
+            Punong Admin
+          </span>
         </div>
         <div className="flex flex-col flex-1 overflow-y-auto px-4 py-6 justify-between">
           <nav className="space-y-1">
@@ -103,19 +120,26 @@ function AdminLayout() {
                   key={link.to}
                   to={link.to}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",
+                    "flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",
                     isActive
                       ? "bg-accent text-accent-foreground shadow-md font-semibold"
-                      : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-100"
+                      : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-100",
                   )}
                 >
-                  <LinkIcon className="h-4 w-4 shrink-0" />
-                  {link.label}
+                  <div className="flex items-center gap-3">
+                    <LinkIcon className="h-4 w-4 shrink-0" />
+                    {link.label}
+                  </div>
+                  {link.badge && link.badge > 0 && (
+                    <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">
+                      {link.badge}
+                    </span>
+                  )}
                 </Link>
               );
             })}
           </nav>
-          
+
           <div className="space-y-2 pt-6 border-t border-slate-800">
             <Link
               to="/"
@@ -139,7 +163,7 @@ function AdminLayout() {
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden">
           {/* Overlay */}
-          <div 
+          <div
             className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity duration-300"
             onClick={() => setSidebarOpen(false)}
           />
@@ -147,17 +171,19 @@ function AdminLayout() {
           <aside className="relative flex w-64 max-w-xs flex-col bg-slate-900 text-slate-100 border-r border-slate-800 animate-in slide-in-from-left duration-300">
             <div className="flex h-16 items-center justify-between px-6 border-b border-slate-800 bg-slate-950">
               <div className="flex items-center gap-2">
-                <Database className="h-6 w-6 text-accent" />
-                <span className="font-display text-lg font-bold tracking-wider text-slate-100">Punong Admin</span>
+                <img src="/logo.png" alt="Punong Logo" className="h-8 w-8 object-contain rounded-full bg-white/10 p-0.5" />
+                <span className="font-display text-lg font-bold tracking-wider text-slate-100">
+                  Punong Admin
+                </span>
               </div>
-              <button 
-                onClick={() => setSidebarOpen(false)} 
+              <button
+                onClick={() => setSidebarOpen(false)}
                 className="text-slate-400 hover:text-slate-100 focus:outline-none"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
+
             <div className="flex flex-col flex-1 overflow-y-auto px-4 py-6 justify-between">
               <nav className="space-y-1">
                 {links.map((link) => {
@@ -169,19 +195,26 @@ function AdminLayout() {
                       to={link.to}
                       onClick={() => setSidebarOpen(false)}
                       className={cn(
-                        "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",
+                        "flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",
                         isActive
                           ? "bg-accent text-accent-foreground shadow-md font-semibold"
-                          : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-100"
+                          : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-100",
                       )}
                     >
-                      <LinkIcon className="h-4 w-4 shrink-0" />
-                      {link.label}
+                      <div className="flex items-center gap-3">
+                        <LinkIcon className="h-4 w-4 shrink-0" />
+                        {link.label}
+                      </div>
+                      {link.badge && link.badge > 0 && (
+                        <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">
+                          {link.badge}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}
               </nav>
-              
+
               <div className="space-y-2 pt-6 border-t border-slate-800">
                 <Link
                   to="/"
@@ -205,11 +238,10 @@ function AdminLayout() {
 
       {/* Main Content Pane */}
       <div className="flex flex-col flex-1 overflow-hidden">
-        
         {/* Top Header */}
         <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6 shadow-sm z-10 shrink-0">
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={() => setSidebarOpen(true)}
               className="text-slate-500 hover:text-slate-700 focus:outline-none md:hidden"
             >
@@ -219,10 +251,12 @@ function AdminLayout() {
               {currentLink.label} Control Panel
             </h2>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex flex-col text-right">
-              <span className="text-sm font-semibold text-slate-700">{user?.email?.split('@')[0]}</span>
+              <span className="text-sm font-semibold text-slate-700">
+                {user?.email?.split("@")[0]}
+              </span>
               <span className="text-xs text-emerald-600 font-medium flex items-center gap-1 justify-end">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                 Admin Active
@@ -237,23 +271,20 @@ function AdminLayout() {
         {/* Scrollable Dashboard Body */}
         <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-slate-50">
           <div className="max-w-7xl mx-auto space-y-6">
-            
             {/* Display Stats Row only when Calendar or Bookings tabs are active for high visibility */}
             {["/admin/calendar", "/admin/bookings"].includes(location.pathname) && (
               <div className="mb-2">
                 <StatsRow />
               </div>
             )}
-            
+
             {/* The child subpage renders here */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 md:p-6 min-h-[500px]">
               <Outlet />
             </div>
           </div>
         </main>
-
       </div>
-
     </div>
   );
 }
@@ -262,26 +293,31 @@ function StatsRow() {
   const { data } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = new Date().toISOString().split("T")[0];
       const [b, c, r, p] = await Promise.all([
         supabase.from("bookings").select("id,status,total_amount,check_in,check_out,room_id"),
         supabase.from("profiles").select("id"),
         supabase.from("rooms").select("id,is_available,maintenance_start,maintenance_end"),
         supabase.from("payments").select("amount,status"),
       ]);
-      const totalRevenue = (p.data ?? []).filter((x: any) => x.status === "verified").reduce((s: number, x: any) => s + Number(x.amount), 0);
-      
+      const totalRevenue = (p.data ?? [])
+        .filter((x: any) => x.status === "verified")
+        .reduce((s: number, x: any) => s + Number(x.amount), 0);
+
       const allRooms = r.data || [];
       const totalRooms = allRooms.length;
       let occupied = 0;
-      
+
       allRooms.forEach((room: any) => {
         let isOccupied = false;
         if (room.maintenance_start && room.maintenance_end) {
-          if (todayStr >= room.maintenance_start && todayStr < room.maintenance_end) isOccupied = true;
+          if (todayStr >= room.maintenance_start && todayStr < room.maintenance_end)
+            isOccupied = true;
         }
         if (!isOccupied) {
-          const roomBookings = (b.data || []).filter((bk: any) => bk.room_id === room.id && bk.status === "approved");
+          const roomBookings = (b.data || []).filter(
+            (bk: any) => bk.room_id === room.id && bk.status === "approved",
+          );
           for (const bk of roomBookings) {
             if (todayStr >= bk.check_in && todayStr < bk.check_out) {
               isOccupied = true;
@@ -291,12 +327,11 @@ function StatsRow() {
         }
         if (isOccupied) occupied++;
       });
-      
+
       const occupancyRate = totalRooms > 0 ? Math.round((occupied / totalRooms) * 100) : 0;
 
       return {
         totalBookings: b.data?.length ?? 0,
-        pendingBookings: b.data?.filter((x: any) => x.status === "pending").length ?? 0,
         customers: c.data?.length ?? 0,
         occupancyRate,
         revenue: totalRevenue,
@@ -305,17 +340,22 @@ function StatsRow() {
   });
   const stats = [
     { label: "Total Reservations", value: data?.totalBookings ?? 0, icon: CalendarCheck },
-    { label: "Pending", value: data?.pendingBookings ?? 0, icon: CalendarCheck },
     { label: "Occupancy Rate", value: `${data?.occupancyRate ?? 0}%`, icon: Percent },
     { label: "Customers", value: data?.customers ?? 0, icon: Users },
-    { label: "Revenue (verified)", value: `₱${(data?.revenue ?? 0).toLocaleString()}`, icon: DollarSign },
+    {
+      label: "Revenue (verified)",
+      value: `₱${(data?.revenue ?? 0).toLocaleString()}`,
+      icon: PhilippinePeso,
+    },
   ];
   return (
-    <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-      {stats.map(s => (
+    <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {stats.map((s) => (
         <Card key={s.label} className="p-5">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-secondary p-2 text-primary"><s.icon className="h-5 w-5" /></div>
+            <div className="rounded-lg bg-secondary p-2 text-primary">
+              <s.icon className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-xs uppercase tracking-wide text-muted-foreground">{s.label}</p>
               <p className="text-xl font-bold">{s.value}</p>

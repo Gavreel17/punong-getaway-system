@@ -15,13 +15,17 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/comp
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { AlertCircle } from "lucide-react";
-import { DayButton, getDefaultClassNames } from "react-day-picker";
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
+import { AlertCircle, Banknote } from "lucide-react";
+import { DayButton } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
+const MySwal = withReactContent(Swal);
+
 export const Route = createFileRoute("/book/$roomId")({
-  head: () => ({ meta: [{ title: "Book your stay — Punong Resort" }] }),
+  head: () => ({ meta: [{ title: "Book your stay — Punong Spring Resort" }] }),
   validateSearch: z.object({
     check_in: z.string().optional(),
     check_out: z.string().optional(),
@@ -34,17 +38,26 @@ function BookPage() {
   const searchParams = Route.useSearch();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  
+
   const [form, setForm] = useState({
-    fullname: "", email: "", phone: "", check_in: searchParams.check_in || "", check_out: searchParams.check_out || "", guests: 1, special_requests: "",
+    fullname: "",
+    email: "",
+    phone: "",
+    check_in: searchParams.check_in || "",
+    check_out: searchParams.check_out || "",
+    guests: 1,
   });
-  
+
+
+
   const [submitting, setSubmitting] = useState(false);
   const [conflictWarning, setConflictWarning] = useState<string | null>(null);
+  const [guestExceeded, setGuestExceeded] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate({ to: "/auth" });
   }, [user, authLoading, navigate]);
+
 
   const { data: room } = useQuery({
     queryKey: ["room", roomId],
@@ -54,6 +67,13 @@ function BookPage() {
       return data;
     },
   });
+
+  const maxCapacity = (() => {
+    if (!room?.capacity) return undefined;
+    const nums = String(room.capacity).match(/\d+/g);
+    if (!nums || nums.length === 0) return undefined;
+    return Math.max(...nums.map(Number));
+  })();
 
   const { data: bookings } = useQuery({
     queryKey: ["room-bookings", roomId],
@@ -71,27 +91,40 @@ function BookPage() {
         const { data } = await supabase.from("resort_blocks" as any).select("*");
         return (data || []) as any[];
       } catch (e) {
-        console.error("Failed to fetch resort blocks:", e);
         return [] as any[];
       }
     },
   });
 
   useEffect(() => {
-    if (user) supabase.from("profiles").select("fullname,email,phone").eq("id", user.id).single()
-      .then(({ data }: any) => data && setForm(f => ({ ...f, fullname: data.fullname ?? "", email: data.email ?? "", phone: data.phone ?? "" })));
+    if (user)
+      supabase
+        .from("profiles")
+        .select("fullname,email,phone")
+        .eq("id", user.id)
+        .single()
+        .then(
+          ({ data }: any) =>
+            data &&
+            setForm((f) => ({
+              ...f,
+              fullname: data.fullname ?? "",
+              email: data.email ?? "",
+              phone: data.phone ?? "",
+            })),
+        );
   }, [user]);
 
-  // Overlap validation
   useEffect(() => {
     if (form.check_in && form.check_out) {
       const start = new Date(form.check_in + "T00:00:00").getTime();
       const end = new Date(form.check_out + "T00:00:00").getTime();
       let hasConflict = false;
-      let conflictReason = "Sorry, this room/cottage is already booked for the selected dates. Please choose another date.";
-      
-      if (start >= end) {
-        setConflictWarning("Check-out must be after check-in.");
+      let conflictReason =
+        "Sorry, this room/cottage is already booked for the selected dates. Please choose another date.";
+
+      if (start > end) {
+        setConflictWarning("Check-out cannot be before check-in.");
         return;
       }
 
@@ -117,11 +150,17 @@ function BookPage() {
 
       if (bookings) {
         for (const b of bookings) {
-          if (b.status === 'approved' || b.status === 'pending') {
+          if (b.status === "approved" || b.status === "pending") {
             const bStart = new Date(b.check_in + "T00:00:00").getTime();
             const bEnd = new Date(b.check_out + "T00:00:00").getTime();
-            if (start < bEnd && end > bStart) {
-              hasConflict = true;
+            if (start === end || bStart === bEnd) {
+              if (start <= bEnd && end >= bStart) {
+                hasConflict = true;
+              }
+            } else {
+              if (start < bEnd && end > bStart) {
+                hasConflict = true;
+              }
             }
           }
         }
@@ -137,90 +176,161 @@ function BookPage() {
     }
   }, [form.check_in, form.check_out, room, bookings, blocks]);
 
-  const nights = form.check_in && form.check_out
-    ? Math.max(0, Math.round((new Date(form.check_out + "T00:00:00").getTime() - new Date(form.check_in + "T00:00:00").getTime()) / 86400000))
-    : 0;
+  const nights =
+    form.check_in && form.check_out
+      ? Math.max(
+          form.check_in === form.check_out ? 1 : 0,
+          Math.round(
+            (new Date(form.check_out + "T00:00:00").getTime() -
+              new Date(form.check_in + "T00:00:00").getTime()) /
+              86400000,
+          ),
+        )
+      : 0;
   const total = room ? Number(room.price) * nights : 0;
+
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!user || !room) return;
     if (conflictWarning) return toast.error(conflictWarning);
-    if (nights <= 0) return toast.error("Check-out must be after check-in");
-    if (form.guests > room.capacity) return toast.error(`Maximum ${room.capacity} guests for this room`);
+    if (nights <= 0) return toast.error("Invalid dates selected");
+
+    const phoneRegex = /^(09|\+639)\d{9}$/;
+    if (!phoneRegex.test(form.phone.replace(/[\s-]/g, ""))) {
+      return toast.error(
+        "Please provide a valid Philippine phone number (e.g. 09171234567 or +639171234567).",
+      );
+    }
 
     setSubmitting(true);
-    const { error } = await supabase.from("bookings").insert({
-      user_id: user.id, room_id: room.id,
-      guest_name: form.fullname, guest_email: form.email, guest_phone: form.phone,
-      check_in: form.check_in, check_out: form.check_out, guests: form.guests,
-      total_amount: total, special_requests: form.special_requests || null,
-      status: 'pending'
-    });
-    setSubmitting(false);
-    if (error) return toast.error(error.message);
-    toast.success("Booking submitted! View it in your dashboard.");
-    navigate({ to: "/dashboard" });
+
+    try {
+      const { data: newBooking, error } = await supabase
+        .from("bookings")
+        .insert({
+          user_id: user.id,
+          room_id: room.id,
+          guest_name: form.fullname,
+          guest_email: form.email,
+          guest_phone: form.phone,
+          check_in: form.check_in,
+          check_out: form.check_out,
+          guests: form.guests,
+          total_amount: total,
+          status: "approved",
+        })
+        .select()
+        .single();
+
+      if (error) {
+        MySwal.fire("Error!", error.message, "error");
+        return;
+      }
+
+      const notesPayload = JSON.stringify({
+        method: "resort",
+      });
+
+      const { error: paymentError } = await supabase
+        .from("payments")
+        .insert({
+          booking_id: newBooking.id,
+          user_id: user.id,
+          amount: 0,
+          status: "pending",
+          receipt_url: null,
+          notes: notesPayload
+        });
+
+      if (paymentError) {
+        console.error("Payment insert failed", paymentError);
+      }
+
+      // Trigger confirmation email
+      if (newBooking) {
+        const bookingDataWithRoom = { ...newBooking, room: { name: room.name, type: room.type } };
+        supabase.functions
+          .invoke("booking-emails", {
+            body: { emailType: "confirmation", bookingData: bookingDataWithRoom },
+          })
+          .catch((err: Error) => console.error("Email system error: " + err.message));
+      }
+
+      await MySwal.fire({
+        title: "Booking Submitted!",
+        text: "Your reservation is confirmed! Payment will be collected upon your arrival.",
+        icon: "success",
+        confirmButtonText: "Go to Dashboard",
+      });
+
+      navigate({ to: "/dashboard" });
+    } catch (err: any) {
+      MySwal.fire("Error!", err.message || "An unexpected error occurred", "error");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
-  if (authLoading || !room) return <div className="flex min-h-screen items-center justify-center">Loading…</div>;
+  if (authLoading || !room)
+    return <div className="flex min-h-screen items-center justify-center">Loading…</div>;
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const getDayStatus = (date: Date) => {
-    if (date < today) return { status: 'past', tooltip: "Past date" };
-    
-    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    
+    if (date < today) return { status: "past", tooltip: "Past date" };
+
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
     if (blocks) {
       for (const block of blocks) {
         if (dateStr >= block.start_date && dateStr <= block.end_date) {
-          return { status: 'booked', tooltip: "Resort Blocked" };
+          return { status: "booked", tooltip: "Resort Blocked" };
         }
       }
     }
 
     if (room.maintenance_start && room.maintenance_end) {
       if (dateStr >= room.maintenance_start && dateStr < room.maintenance_end) {
-         return { status: 'booked', tooltip: "Under Maintenance" };
+        return { status: "booked", tooltip: "Under Maintenance" };
       }
     }
 
     if (bookings) {
       for (const b of bookings) {
-        if (b.status === 'approved' || b.status === 'pending') {
+        if (b.status === "approved" || b.status === "pending") {
           if (dateStr >= b.check_in && dateStr < b.check_out) {
-            return { status: 'booked', tooltip: "Booked" };
+            return { status: "booked", tooltip: "Booked" };
           }
         }
       }
     }
 
-    return { status: 'available', tooltip: "Available" };
+    return { status: "available", tooltip: "Available" };
   };
 
   const CustomDayButton = (dayProps: React.ComponentProps<typeof DayButton>) => {
     const { day, modifiers, className: defaultClassName, ...btnProps } = dayProps;
     const { status, tooltip } = getDayStatus(day.date);
-    
+
     let bgColor = "";
     let textColor = "text-foreground";
-    
-    if (status === 'past') {
+
+    if (status === "past") {
       bgColor = "bg-muted opacity-50";
       textColor = "text-muted-foreground";
-    } else if (status === 'booked') {
+    } else if (status === "booked") {
       bgColor = "bg-red-500 hover:bg-red-600";
       textColor = "text-white";
-    } else if (status === 'available') {
+    } else if (status === "available") {
       bgColor = "bg-green-500 hover:bg-green-600";
       textColor = "text-white";
     }
 
     const isSelected = modifiers.selected;
     if (isSelected) {
-       bgColor = "bg-primary text-primary-foreground font-bold ring-2 ring-primary ring-offset-2";
+      bgColor = "bg-primary text-primary-foreground font-bold ring-2 ring-primary ring-offset-2";
     }
 
     return (
@@ -231,19 +341,17 @@ function BookPage() {
               day={day}
               modifiers={modifiers}
               {...btnProps}
-              disabled={btnProps.disabled || status === 'booked' || status === 'past'}
+              disabled={btnProps.disabled || status === "booked" || status === "past"}
               className={cn(
                 buttonVariants({ variant: "ghost", size: "icon" }),
                 "h-9 w-9 p-0 font-normal aria-selected:opacity-100 transition-colors rounded-md",
                 bgColor,
                 textColor,
-                defaultClassName
+                defaultClassName,
               )}
             />
           </TooltipTrigger>
-          <TooltipContent className="z-[60] font-medium shadow-md">
-            {tooltip}
-          </TooltipContent>
+          <TooltipContent className="z-[60] font-medium shadow-md">{tooltip}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
     );
@@ -259,8 +367,6 @@ function BookPage() {
 
           <div className="mt-8 mb-8 border border-border/60 bg-slate-50/50 p-6 rounded-xl shadow-sm">
             <h2 className="text-xl font-semibold mb-4 text-center">1. Select Your Dates</h2>
-            <p className="text-sm text-muted-foreground text-center mb-6">Tap the available green dates to choose your check-in and check-out schedule.</p>
-            
             <div className="flex flex-col items-center justify-center">
               <Calendar
                 mode="range"
@@ -273,45 +379,110 @@ function BookPage() {
                   let check_out = "";
                   if (range?.from) check_in = format(range.from, "yyyy-MM-dd");
                   if (range?.to) check_out = format(range.to, "yyyy-MM-dd");
-                  setForm(f => ({ ...f, check_in, check_out }));
+                  setForm((f) => ({ ...f, check_in, check_out }));
                 }}
-                disabled={(date) => getDayStatus(date).status === 'booked' || date < today}
+                disabled={(date) => getDayStatus(date).status === "booked" || date < today}
                 className="bg-white rounded-md border shadow-sm p-4"
                 components={{ DayButton: CustomDayButton }}
               />
               
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm font-medium">
-                <span className="flex items-center gap-2"><div className="h-4 w-4 rounded-full bg-green-500 shadow-sm"></div> Available</span>
-                <span className="flex items-center gap-2"><div className="h-4 w-4 rounded-full bg-red-500 shadow-sm"></div> Fully Booked</span>
-                <span className="flex items-center gap-2"><div className="h-4 w-4 rounded-full bg-primary shadow-sm"></div> Selected</span>
+              <div className="flex items-center justify-center gap-4 sm:gap-6 mt-6 text-sm text-muted-foreground flex-wrap">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-green-500"></div>
+                  <span>Available</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-red-500"></div>
+                  <span>Booked / Unavailable</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-primary ring-1 ring-primary ring-offset-1"></div>
+                  <span>Selected</span>
+                </div>
               </div>
             </div>
           </div>
 
           <h2 className="text-xl font-semibold mb-4 border-t pt-6">2. Guest Details</h2>
-          <form onSubmit={onSubmit} className="grid gap-4">
+          <form id="booking-form" onSubmit={onSubmit} className="grid gap-6">
             <div className="grid gap-4 sm:grid-cols-2">
-              <div><Label>Full Name</Label><Input required value={form.fullname} onChange={e => setForm({ ...form, fullname: e.target.value })} /></div>
-              <div><Label>Email</Label><Input type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
-              <div><Label>Phone</Label><Input required value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
-              <div><Label>Guests</Label><Input type="number" min={1} max={room.capacity} required value={form.guests} onChange={e => setForm({ ...form, guests: Number(e.target.value) })} /></div>
-              <div><Label>Check-in Date</Label><Input type="date" required readOnly value={form.check_in} className="bg-slate-100 font-medium text-slate-700 cursor-not-allowed" /></div>
-              <div><Label>Check-out Date</Label><Input type="date" required readOnly value={form.check_out} className="bg-slate-100 font-medium text-slate-700 cursor-not-allowed" /></div>
+              <div>
+                <Label>Full Name</Label>
+                <Input required value={form.fullname} onChange={(e) => setForm({ ...form, fullname: e.target.value })} />
+              </div>
+              <div>
+                <Label>Email</Label>
+                <Input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              </div>
+              <div>
+                <Label>Phone</Label>
+                <Input required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+              </div>
+              <div>
+                <Label>Guests {maxCapacity ? `(Max: ${maxCapacity})` : ""}</Label>
+                <Input 
+                  type="number" 
+                  min={1} 
+                  required 
+                  value={form.guests || ""} 
+                  onChange={(e) => {
+                    if (e.target.value === "") {
+                      setForm({ ...form, guests: "" as any });
+                      setGuestExceeded(false);
+                      return;
+                    }
+                    const val = Number(e.target.value);
+                    if (maxCapacity && val > maxCapacity) {
+                      setGuestExceeded(true);
+                    } else {
+                      setGuestExceeded(false);
+                    }
+                    setForm({ ...form, guests: val });
+                  }} 
+                />
+                {guestExceeded && maxCapacity && (
+                  <p className="mt-1.5 text-sm text-red-600 font-medium flex items-center gap-1.5">
+                    ❌ Guest count exceeds the maximum capacity of {maxCapacity}. Please reduce the number of guests to proceed.
+                  </p>
+                )}
+              </div>
             </div>
-            
+
             {conflictWarning && (
-              <div className="mt-2 rounded-md bg-destructive/15 p-4 text-destructive flex items-start gap-3">
+              <div className="rounded-md bg-destructive/15 p-4 text-destructive flex items-start gap-3">
                 <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
                 <p className="text-sm font-medium">{conflictWarning}</p>
               </div>
             )}
 
-            <div>
-              <Label>Special Requests</Label>
-              <Textarea rows={3} value={form.special_requests} onChange={e => setForm({ ...form, special_requests: e.target.value })} placeholder="Anything we should know?" />
+            <h2 className="text-xl font-semibold mb-2 border-t pt-6">3. Payment Details</h2>
+            <div className="bg-amber-50/50 p-6 rounded-xl border border-amber-100">
+              <div className="flex items-center gap-2 mb-3 text-amber-900">
+                <Banknote className="w-6 h-6" />
+                <h3 className="font-bold text-lg">Pay at the Resort</h3>
+              </div>
+
+              <p className="text-amber-700 text-sm italic border-t border-amber-200/50 pt-3">
+                <span className="font-bold mr-1">Policy:</span>
+                Reservations will only be held until the scheduled check-in time. Failure to arrive without prior notice may result in automatic cancellation.
+              </p>
             </div>
-            
-            <Button type="submit" disabled={submitting || !!conflictWarning || !form.check_in || !form.check_out} size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 w-full sm:w-auto">
+
+            <div className="bg-slate-50/50 p-6 rounded-xl border border-slate-200 mt-6 text-sm text-slate-600">
+              <h4 className="font-semibold text-slate-800 mb-2 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" /> Resort Policies
+              </h4>
+              <p>
+                Reservations may be cancelled up to 24 hours before the scheduled check-in date. Failure to arrive without prior cancellation may result in the reservation being marked as a No-Show.
+              </p>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={submitting || !!conflictWarning || !form.check_in || !form.check_out || guestExceeded}
+              size="lg"
+              className="bg-accent text-accent-foreground hover:bg-accent/90 w-full mt-4"
+            >
               {submitting ? "Submitting…" : "Confirm Reservation"}
             </Button>
           </form>
@@ -319,13 +490,29 @@ function BookPage() {
 
         <div className="flex flex-col gap-6">
           <Card className="h-fit p-6 sticky top-24">
-            {room.image_url && <img src={room.image_url} alt={room.name} className="mb-4 aspect-[4/3] w-full rounded-lg object-cover" />}
+            {room.image_url && (
+              <img src={room.image_url} alt={room.name} className="mb-4 aspect-[4/3] w-full rounded-lg object-cover" />
+            )}
             <h3 className="font-semibold">{room.name}</h3>
             <p className="text-sm text-muted-foreground capitalize">{room.type} · up to {room.capacity} guests</p>
             <div className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
               <div className="flex justify-between"><span>Rate</span><span>₱{Number(room.price).toLocaleString()} / night</span></div>
+              {form.check_in && (
+                <div className="flex justify-between">
+                  <span>Check-in</span>
+                  <span className="font-medium">{format(new Date(form.check_in + "T00:00:00"), "MMM d, yyyy")}</span>
+                </div>
+              )}
+              {form.check_out && (
+                <div className="flex justify-between">
+                  <span>Check-out</span>
+                  <span className="font-medium">{format(new Date(form.check_out + "T00:00:00"), "MMM d, yyyy")}</span>
+                </div>
+              )}
               <div className="flex justify-between"><span>Nights</span><span>{nights > 0 ? nights : 0}</span></div>
-              <div className="flex justify-between text-base font-bold pt-2 border-t border-border"><span>Total</span><span className="text-primary">₱{total > 0 ? total.toLocaleString() : 0}</span></div>
+              <div className="flex justify-between text-base font-bold pt-2 border-t border-border">
+                <span>Total</span><span className="text-primary">₱{total > 0 ? total.toLocaleString() : 0}</span>
+              </div>
             </div>
           </Card>
         </div>

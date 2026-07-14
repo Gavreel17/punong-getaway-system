@@ -39,4 +39,3 @@ export const makeAdmin = createServerFn({ method: "POST" })
       throw new Error(err.message || "Failed to make user admin");
     }
   });
-

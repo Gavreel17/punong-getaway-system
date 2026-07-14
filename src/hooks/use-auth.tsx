@@ -12,7 +12,11 @@ interface AuthCtx {
 }
 
 const Ctx = createContext<AuthCtx>({
-  user: null, session: null, role: null, loading: true, signOut: async () => {},
+  user: null,
+  session: null,
+  role: null,
+  loading: true,
+  signOut: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -21,12 +25,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_evt: string, s: any) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_evt: string, s: any) => {
       setSession(s);
       if (s?.user) {
         // Fetch role from localStorage mock DB
         setTimeout(async () => {
-          const { data } = await supabase.from("user_roles").select("role").eq("user_id", s.user.id);
+          const { data } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", s.user.id);
           const roles = (data as any[])?.map((r: any) => r.role) ?? [];
           setRole(roles.includes("admin") ? "admin" : "customer");
           setLoading(false);
@@ -40,11 +49,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data }: any) => {
       setSession(data.session);
       if (data.session?.user) {
-        supabase.from("user_roles").select("role").eq("user_id", data.session.user.id).then(({ data: r }: any) => {
-          const roles = (r as any[])?.map((x: any) => x.role) ?? [];
-          setRole(roles.includes("admin") ? "admin" : "customer");
-          setLoading(false);
-        });
+        supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", data.session.user.id)
+          .then(({ data: r }: any) => {
+            const roles = (r as any[])?.map((x: any) => x.role) ?? [];
+            setRole(roles.includes("admin") ? "admin" : "customer");
+            setLoading(false);
+          });
       } else {
         setLoading(false);
       }
@@ -54,13 +67,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <Ctx.Provider value={{
-      user: session?.user ?? null,
-      session, role, loading,
-      signOut: async () => {
-        await supabase.auth.signOut();
-      },
-    }}>
+    <Ctx.Provider
+      value={{
+        user: session?.user ?? null,
+        session,
+        role,
+        loading,
+        signOut: async () => {
+          await supabase.auth.signOut();
+        },
+      }}
+    >
       {children}
     </Ctx.Provider>
   );

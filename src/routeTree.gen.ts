@@ -17,11 +17,13 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as ReceiptBookingIdRouteImport } from './routes/receipt.$bookingId'
 import { Route as BookRoomIdRouteImport } from './routes/book.$roomId'
 import { Route as AdminRoomsRouteImport } from './routes/admin.rooms'
-import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
+import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
+import { Route as AdminCancellationsRouteImport } from './routes/admin.cancellations'
 import { Route as AdminCalendarRouteImport } from './routes/admin.calendar'
 import { Route as AdminBookingsRouteImport } from './routes/admin.bookings'
 
@@ -65,6 +67,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const ReceiptBookingIdRoute = ReceiptBookingIdRouteImport.update({
+  id: '/receipt/$bookingId',
+  path: '/receipt/$bookingId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BookRoomIdRoute = BookRoomIdRouteImport.update({
   id: '/book/$roomId',
   path: '/book/$roomId',
@@ -75,9 +82,9 @@ const AdminRoomsRoute = AdminRoomsRouteImport.update({
   path: '/rooms',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
-  id: '/payments',
-  path: '/payments',
+const AdminReportsRoute = AdminReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
@@ -88,6 +95,11 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
 const AdminCustomersRoute = AdminCustomersRouteImport.update({
   id: '/customers',
   path: '/customers',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCancellationsRoute = AdminCancellationsRouteImport.update({
+  id: '/cancellations',
+  path: '/cancellations',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminCalendarRoute = AdminCalendarRouteImport.update({
@@ -111,11 +123,13 @@ export interface FileRoutesByFullPath {
   '/rooms': typeof RoomsRoute
   '/admin/bookings': typeof AdminBookingsRoute
   '/admin/calendar': typeof AdminCalendarRoute
+  '/admin/cancellations': typeof AdminCancellationsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/login': typeof AdminLoginRoute
-  '/admin/payments': typeof AdminPaymentsRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/admin/rooms': typeof AdminRoomsRoute
   '/book/$roomId': typeof BookRoomIdRoute
+  '/receipt/$bookingId': typeof ReceiptBookingIdRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -127,11 +141,13 @@ export interface FileRoutesByTo {
   '/rooms': typeof RoomsRoute
   '/admin/bookings': typeof AdminBookingsRoute
   '/admin/calendar': typeof AdminCalendarRoute
+  '/admin/cancellations': typeof AdminCancellationsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/login': typeof AdminLoginRoute
-  '/admin/payments': typeof AdminPaymentsRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/admin/rooms': typeof AdminRoomsRoute
   '/book/$roomId': typeof BookRoomIdRoute
+  '/receipt/$bookingId': typeof ReceiptBookingIdRoute
   '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
@@ -145,11 +161,13 @@ export interface FileRoutesById {
   '/rooms': typeof RoomsRoute
   '/admin/bookings': typeof AdminBookingsRoute
   '/admin/calendar': typeof AdminCalendarRoute
+  '/admin/cancellations': typeof AdminCancellationsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/login': typeof AdminLoginRoute
-  '/admin/payments': typeof AdminPaymentsRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/admin/rooms': typeof AdminRoomsRoute
   '/book/$roomId': typeof BookRoomIdRoute
+  '/receipt/$bookingId': typeof ReceiptBookingIdRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -164,11 +182,13 @@ export interface FileRouteTypes {
     | '/rooms'
     | '/admin/bookings'
     | '/admin/calendar'
+    | '/admin/cancellations'
     | '/admin/customers'
     | '/admin/login'
-    | '/admin/payments'
+    | '/admin/reports'
     | '/admin/rooms'
     | '/book/$roomId'
+    | '/receipt/$bookingId'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -180,11 +200,13 @@ export interface FileRouteTypes {
     | '/rooms'
     | '/admin/bookings'
     | '/admin/calendar'
+    | '/admin/cancellations'
     | '/admin/customers'
     | '/admin/login'
-    | '/admin/payments'
+    | '/admin/reports'
     | '/admin/rooms'
     | '/book/$roomId'
+    | '/receipt/$bookingId'
     | '/admin'
   id:
     | '__root__'
@@ -197,11 +219,13 @@ export interface FileRouteTypes {
     | '/rooms'
     | '/admin/bookings'
     | '/admin/calendar'
+    | '/admin/cancellations'
     | '/admin/customers'
     | '/admin/login'
-    | '/admin/payments'
+    | '/admin/reports'
     | '/admin/rooms'
     | '/book/$roomId'
+    | '/receipt/$bookingId'
     | '/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -214,6 +238,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   RoomsRoute: typeof RoomsRoute
   BookRoomIdRoute: typeof BookRoomIdRoute
+  ReceiptBookingIdRoute: typeof ReceiptBookingIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -274,6 +299,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/receipt/$bookingId': {
+      id: '/receipt/$bookingId'
+      path: '/receipt/$bookingId'
+      fullPath: '/receipt/$bookingId'
+      preLoaderRoute: typeof ReceiptBookingIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/book/$roomId': {
       id: '/book/$roomId'
       path: '/book/$roomId'
@@ -288,11 +320,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRoomsRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/payments': {
-      id: '/admin/payments'
-      path: '/payments'
-      fullPath: '/admin/payments'
-      preLoaderRoute: typeof AdminPaymentsRouteImport
+    '/admin/reports': {
+      id: '/admin/reports'
+      path: '/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/login': {
@@ -307,6 +339,13 @@ declare module '@tanstack/react-router' {
       path: '/customers'
       fullPath: '/admin/customers'
       preLoaderRoute: typeof AdminCustomersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/cancellations': {
+      id: '/admin/cancellations'
+      path: '/cancellations'
+      fullPath: '/admin/cancellations'
+      preLoaderRoute: typeof AdminCancellationsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/calendar': {
@@ -329,9 +368,10 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminBookingsRoute: typeof AdminBookingsRoute
   AdminCalendarRoute: typeof AdminCalendarRoute
+  AdminCancellationsRoute: typeof AdminCancellationsRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminLoginRoute: typeof AdminLoginRoute
-  AdminPaymentsRoute: typeof AdminPaymentsRoute
+  AdminReportsRoute: typeof AdminReportsRoute
   AdminRoomsRoute: typeof AdminRoomsRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -339,9 +379,10 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminBookingsRoute: AdminBookingsRoute,
   AdminCalendarRoute: AdminCalendarRoute,
+  AdminCancellationsRoute: AdminCancellationsRoute,
   AdminCustomersRoute: AdminCustomersRoute,
   AdminLoginRoute: AdminLoginRoute,
-  AdminPaymentsRoute: AdminPaymentsRoute,
+  AdminReportsRoute: AdminReportsRoute,
   AdminRoomsRoute: AdminRoomsRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
@@ -357,6 +398,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   RoomsRoute: RoomsRoute,
   BookRoomIdRoute: BookRoomIdRoute,
+  ReceiptBookingIdRoute: ReceiptBookingIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
