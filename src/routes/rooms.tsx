@@ -119,17 +119,17 @@ function RoomsPage() {
   return (
     <div className="min-h-screen">
       <Navbar />
-      <section className="bg-[image:var(--gradient-hero)] py-16 text-white">
+      <section className="bg-[image:var(--gradient-hero)] py-12 sm:py-16 text-white">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-5xl font-bold">Rooms & Cottages</h1>
-          <p className="mt-3 text-white/90">Choose your tropical sanctuary</p>
+          <h1 className="text-3xl sm:text-5xl font-bold tracking-tight">Rooms & Cottages</h1>
+          <p className="mt-2 text-sm sm:text-base text-white/90">Choose your tropical sanctuary</p>
         </div>
       </section>
 
-      <section className="container mx-auto px-4 py-8">
-        <div className="mb-8 rounded-xl border bg-card p-6 shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold flex items-center gap-2">
-            <CalendarIcon className="h-5 w-5" /> Global Availability Search
+      <section className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
+        <div className="mb-6 sm:mb-8 rounded-xl border bg-card p-4 sm:p-6 shadow-sm">
+          <h2 className="mb-4 text-base sm:text-lg font-semibold flex items-center gap-2">
+            <CalendarIcon className="h-5 w-5 text-accent" /> Global Availability Search
           </h2>
 
           <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-4">
@@ -142,31 +142,31 @@ function RoomsPage() {
                   <Button
                     variant={"outline"}
                     className={cn(
-                      "w-full justify-start text-left font-normal",
+                      "w-full justify-start text-left font-normal h-10 truncate",
                       !dateRange && "text-muted-foreground",
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
                     {dateRange?.from ? (
                       dateRange.to ? (
-                        <>
+                        <span className="truncate">
                           {format(dateRange.from, "LLL dd, y")} -{" "}
                           {format(dateRange.to, "LLL dd, y")}
-                        </>
+                        </span>
                       ) : (
-                        format(dateRange.from, "LLL dd, y")
+                        <span>{format(dateRange.from, "LLL dd, y")}</span>
                       )
                     ) : (
-                      <span>Pick your check-in and check-out dates</span>
+                      <span className="truncate">Pick your check-in & check-out dates</span>
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-[calc(100vw-2rem)] sm:w-auto p-0 max-w-sm overflow-x-auto" align="start">
                   <ResortCalendar
                     mode="range"
                     selected={dateRange}
                     onSelect={setDateRange}
-                    numberOfMonths={2}
+                    numberOfMonths={1}
                     className="border-0 shadow-none"
                   />
                 </PopoverContent>
@@ -182,7 +182,7 @@ function RoomsPage() {
                   placeholder="Search..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-10"
                 />
               </div>
             </div>
@@ -191,7 +191,7 @@ function RoomsPage() {
                 Room Type
               </label>
               <Select value={type} onValueChange={setType}>
-                <SelectTrigger>
+                <SelectTrigger className="h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -204,38 +204,38 @@ function RoomsPage() {
             </div>
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 border-t pt-4 text-sm">
+          <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 border-t pt-3 text-xs sm:text-sm">
             <span className="flex items-center gap-1.5 font-medium text-muted-foreground">
               <Info className="h-4 w-4" /> Legend:
             </span>
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5">
               <div className="h-3 w-3 rounded-full bg-green-500"></div> Available
             </span>
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5">
               <div className="h-3 w-3 rounded-full bg-yellow-400"></div> Limited
             </span>
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5">
               <div className="h-3 w-3 rounded-full bg-red-500"></div> Not Available
             </span>
-            <span className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded-full bg-slate-500"></div> Past/Maintenance
+            <span className="flex items-center gap-1.5">
+              <div className="h-3 w-3 rounded-full bg-slate-500"></div> Maintenance
             </span>
           </div>
         </div>
 
         {isLoading ? (
-          <p className="text-center text-muted-foreground">Loading rooms…</p>
+          <p className="text-center text-muted-foreground py-8">Loading rooms…</p>
         ) : filtered.length === 0 ? (
-          <p className="text-center text-muted-foreground">No rooms match your filters.</p>
+          <p className="text-center text-muted-foreground py-8">No rooms match your filters.</p>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((r: any) => {
               const status = getRoomStatus(r);
 
               return (
                 <Card
                   key={r.id}
-                  className="group overflow-hidden border-border/60 transition-all hover:-translate-y-1 hover:shadow-elegant flex flex-col"
+                  className="group overflow-hidden border-border/60 transition-all hover:shadow-md flex flex-col rounded-xl"
                 >
                   <div className="aspect-[4/3] overflow-hidden bg-muted relative">
                     {r.image_url && (
@@ -246,32 +246,32 @@ function RoomsPage() {
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     )}
-                    <div className="absolute top-4 right-4">
+                    <div className="absolute top-3 right-3">
                       <Badge
                         variant="secondary"
-                        className={`px-2.5 py-0.5 text-xs font-medium shadow-sm ${getBadgeClass(status.color)}`}
+                        className={`px-2.5 py-1 text-xs font-medium shadow-sm ${getBadgeClass(status.color)}`}
                       >
                         {status.text}
                       </Badge>
                     </div>
                   </div>
-                  <div className="p-5 flex-1 flex flex-col">
-                    <h3 className="text-xl font-semibold">{r.name}</h3>
-                    <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
+                  <div className="p-4 sm:p-5 flex-1 flex flex-col">
+                    <h3 className="text-lg sm:text-xl font-bold text-slate-900">{r.name}</h3>
+                    <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground line-clamp-2">
                       {r.description}
                     </p>
-                    <div className="mt-3 flex items-center gap-3 text-sm text-muted-foreground">
+                    <div className="mt-3 flex items-center gap-3 text-xs sm:text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Users className="h-4 w-4" /> {r.capacity} guests
                       </span>
                       <span className="capitalize">· {r.type === 'villa' ? 'function hall' : r.type}</span>
                     </div>
-                    <div className="mt-auto pt-4 flex items-end justify-between">
+                    <div className="mt-auto pt-4 flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-t border-slate-100">
                       <div>
-                        <span className="text-2xl font-bold text-primary">
+                        <span className="text-xl sm:text-2xl font-bold text-primary">
                           ₱{Number(r.price).toLocaleString()}
                         </span>
-                        <span className="text-sm text-muted-foreground"> / night</span>
+                        <span className="text-xs sm:text-sm text-muted-foreground"> / night</span>
                       </div>
                       <Button
                         asChild
@@ -280,7 +280,7 @@ function RoomsPage() {
                           status.status === "maintenance" ||
                           status.status === "invalid"
                         }
-                        className="bg-accent text-accent-foreground hover:bg-accent/90"
+                        className="w-full sm:w-auto bg-accent text-accent-foreground hover:bg-accent/90 h-10 font-semibold shadow-sm justify-center"
                       >
                         <Link
                           to="/book/$roomId"

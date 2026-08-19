@@ -25,7 +25,9 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Upload, Eye, AlertCircle, RefreshCw, Star } from "lucide-react";
+import { Upload, Eye, AlertCircle, RefreshCw, Star, Download } from "lucide-react";
+import { processAutoBookingStatuses } from "@/lib/booking-utils";
+
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "My Bookings — Punong Spring Resort" }] }),
@@ -60,9 +62,13 @@ function Dashboard() {
     if (!feedbackData || !user) return;
     setSubmittingFeedback(true);
     
+    const targetBooking = bookings.find((b: any) => b.id === feedbackData.id);
+    const guestName = targetBooking?.guest_name || user.email?.split("@")[0] || "Guest";
+
     const { error } = await supabase.from("feedbacks").insert({
       booking_id: feedbackData.id,
       user_id: user.id,
+      guest_name: guestName,
       rating: parseInt(feedbackRating),
       comment: feedbackComment,
     });
@@ -94,13 +100,8 @@ function Dashboard() {
         .order("created_at", { ascending: false });
       if (error) throw error;
 
-      const today = new Date().toISOString().split("T")[0];
-      const pastBookings = data?.filter((b: any) => b.status === "approved" && b.check_out < today);
-      if (pastBookings && pastBookings.length > 0) {
-        for (const b of pastBookings) {
-          await supabase.from("bookings").update({ status: "completed" }).eq("id", b.id);
-          b.status = "completed";
-        }
+      if (data) {
+        await processAutoBookingStatuses(data);
       }
 
       return data;
@@ -143,78 +144,78 @@ function Dashboard() {
   return (
     <div className="min-h-screen bg-slate-50">
       <Navbar />
-      <section className="container mx-auto px-4 py-12 max-w-5xl">
-        <div className="mb-8 flex items-center justify-between">
+      <section className="container mx-auto px-3 sm:px-4 py-6 sm:py-12 max-w-5xl">
+        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold">My Bookings</h1>
-            <p className="mt-1 text-muted-foreground">Manage your reservations and payments</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">My Bookings</h1>
+            <p className="mt-1 text-xs sm:text-sm text-muted-foreground">Manage your reservations and payments</p>
           </div>
-          <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90 shadow-sm">
+          <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90 shadow-sm w-full sm:w-auto justify-center h-10 font-semibold">
             <Link to="/rooms">New Booking</Link>
           </Button>
         </div>
 
         {bookings.length === 0 ? (
-          <Card className="p-12 text-center shadow-sm border-slate-200">
-            <p className="text-muted-foreground">No bookings yet.</p>
-            <Button asChild className="mt-4 shadow-sm">
+          <Card className="p-8 sm:p-12 text-center shadow-sm border-slate-200 rounded-xl bg-white">
+            <p className="text-sm sm:text-base text-muted-foreground">No bookings yet.</p>
+            <Button asChild className="mt-4 shadow-sm h-10">
               <Link to="/rooms">Browse Rooms</Link>
             </Button>
           </Card>
         ) : (
-          <div className="grid gap-6">
+          <div className="grid gap-4 sm:gap-6">
             {bookings.map((b: any) => (
-              <Card key={b.id} className="overflow-hidden p-0 shadow-sm border-slate-200 transition-all hover:shadow-md">
+              <Card key={b.id} className="overflow-hidden p-0 shadow-sm border-slate-200 transition-all hover:shadow-md rounded-xl bg-white">
                 <div className="grid gap-0 sm:grid-cols-[200px_1fr]">
                   {b.room?.image_url ? (
                     <img
                       src={b.room.image_url}
                       alt={b.room.name}
-                      className="h-full max-h-48 w-full object-cover sm:max-h-none"
+                      className="h-44 sm:h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="h-full w-full bg-slate-200 flex items-center justify-center text-slate-400">
+                    <div className="h-44 sm:h-full w-full bg-slate-200 flex items-center justify-center text-slate-400">
                       No Image
                     </div>
                   )}
-                  <div className="flex flex-col p-6">
-                    <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
+                  <div className="flex flex-col p-4 sm:p-6">
+                    <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
                       <div>
-                        <h3 className="text-xl font-bold text-slate-800">
+                        <h3 className="text-lg sm:text-xl font-bold text-slate-900">
                           {b.room?.name}{" "}
-                          <span className="text-xs text-muted-foreground uppercase tracking-wider ml-2 px-2 py-1 bg-slate-100 rounded-full font-semibold">
+                          <span className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider ml-1.5 px-2 py-0.5 bg-slate-100 rounded-full font-semibold inline-block">
                             {b.room?.type}
                           </span>
                         </h3>
-                        <p className="text-sm font-medium text-slate-500 mt-1">
+                        <p className="text-xs sm:text-sm font-medium text-slate-500 mt-1">
                           {b.check_in} → {b.check_out} · {b.guests} guests
                         </p>
                       </div>
-                      <div className="flex flex-col items-end gap-2">
+                      <div className="flex flex-col items-start sm:items-end gap-1">
                         <Badge className={statusColors[b.status]}>Booking: {b.status}</Badge>
                       </div>
                     </div>
 
-                    <div className="grid gap-1 text-sm text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                      <div className="font-semibold text-slate-800 mb-1">Guest Details</div>
+                    <div className="grid gap-1 text-xs sm:text-sm text-slate-600 bg-slate-50 p-3 sm:p-4 rounded-xl border border-slate-100">
+                      <div className="font-bold text-slate-800 mb-0.5">Guest Details</div>
                       <div>Name: <span className="text-slate-900 font-medium">{b.guest_name}</span></div>
-                      <div>Contact: <span className="text-slate-900 font-medium">{b.guest_email} • {b.guest_phone}</span></div>
+                      <div className="truncate">Contact: <span className="text-slate-900 font-medium truncate">{b.guest_email} • {b.guest_phone}</span></div>
                     </div>
 
-                      <div className="mt-auto pt-6 flex flex-wrap items-end justify-between gap-4">
+                      <div className="mt-auto pt-4 sm:pt-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-t border-slate-100">
                         <div>
-                          <p className="text-xs font-semibold uppercase text-slate-500 mb-1">Total Amount</p>
-                          <p className="text-2xl font-black text-primary">
+                          <p className="text-xs font-semibold uppercase text-slate-500 mb-0.5">Total Amount</p>
+                          <p className="text-xl sm:text-2xl font-black text-primary">
                             ₱{Number(b.total_amount).toLocaleString()}
                           </p>
                         </div>
-                        <div className="flex flex-col items-end gap-2">
+                        <div className="flex flex-col sm:items-end gap-2 w-full sm:w-auto">
                           <PaymentSection booking={b} onChange={refetch} />
                           {(b.status !== "cancelled" && b.status !== "rejected") && (
                             <Button 
                               variant="outline" 
                               size="sm" 
-                              className="text-destructive border-destructive hover:bg-destructive/10"
+                              className="w-full sm:w-auto h-9 text-xs text-destructive border-destructive hover:bg-destructive/10 justify-center"
                               onClick={() => setCancelData({ id: b.id, payment: b.payments?.[0] })}
                             >
                               Cancel Booking
@@ -224,7 +225,7 @@ function Dashboard() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="text-primary border-primary hover:bg-primary/10"
+                              className="w-full sm:w-auto h-9 text-xs text-primary border-primary hover:bg-primary/10 justify-center"
                               onClick={() => setFeedbackData({ id: b.id })}
                             >
                               Leave Feedback
@@ -233,11 +234,11 @@ function Dashboard() {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className="text-slate-600 border-slate-300 hover:bg-slate-100"
+                            className="w-full sm:w-auto h-9 text-xs text-slate-700 border-slate-300 hover:bg-slate-100 justify-center"
                             asChild
                           >
                             <Link to="/receipt/$bookingId" params={{ bookingId: b.id }}>
-                              Download and Print
+                              <Download className="w-3.5 h-3.5 mr-1" /> DOWNLOAD
                             </Link>
                           </Button>
                         </div>

@@ -40,15 +40,42 @@ function Index() {
   const { data: feedbacks = [] } = useQuery({
     queryKey: ["approved-feedbacks"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // 1. Fetch all feedbacks safely
+      const { data: feedbackRows, error } = await supabase
         .from("feedbacks")
-        .select("id, rating, comment")
+        .select("*")
         .order("created_at", { ascending: false });
-      if (error) {
-        console.error(error);
+
+      if (error || !feedbackRows) {
+        console.error("Error fetching feedbacks:", error);
         return [];
       }
-      return data || [];
+
+      // 2. Try to enrich with booking guest_name if booking_ids exist
+      try {
+        const bookingIds = feedbackRows.map((f: any) => f.booking_id).filter(Boolean);
+        if (bookingIds.length > 0) {
+          const { data: bookingRows } = await supabase
+            .from("bookings")
+            .select("id, guest_name")
+            .in("id", bookingIds);
+
+          if (bookingRows && bookingRows.length > 0) {
+            const bookingMap = new Map(bookingRows.map((b: any) => [b.id, b.guest_name]));
+            return feedbackRows.map((f: any) => ({
+              ...f,
+              resolved_name: f.guest_name || bookingMap.get(f.booking_id) || "Verified Guest",
+            }));
+          }
+        }
+      } catch (e) {
+        console.warn("Could not enrich booking guest names:", e);
+      }
+
+      return feedbackRows.map((f: any) => ({
+        ...f,
+        resolved_name: f.guest_name || "Verified Guest",
+      }));
     },
   });
 
@@ -165,7 +192,9 @@ function Index() {
                     ))}
                   </div>
                   {t.comment && <p className="text-foreground/90">"{t.comment}"</p>}
-                  <p className="mt-4 text-sm font-semibold">— Verified Guest</p>
+                  <p className="mt-4 text-sm font-semibold">
+                    — {t.resolved_name || t.guest_name || t.booking?.guest_name || "Verified Guest"}
+                  </p>
                 </Card>
               ))
             )}

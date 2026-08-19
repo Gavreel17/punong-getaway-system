@@ -87,15 +87,14 @@ function AdminLayout() {
     );
   }
 
-  const links = [
-    { title: "Dashboard", to: "/admin", icon: LayoutDashboard },
-    { to: "/admin/calendar", label: "Calendar", icon: CalendarIcon },
-    { to: "/admin/bookings", label: "Bookings & Payments", icon: CalendarCheck },
-    { to: "/admin/cancellations", label: "Cancellations", icon: CalendarCheck },
-    { to: "/admin/rooms", label: "Rooms & Cottages", icon: BedDouble },
-
-    { to: "/admin/customers", label: "Customers", icon: Users },
-    { to: "/admin/reports", label: "Reports", icon: FileText },
+  const links: { label: string; to: string; icon: any; badge?: number }[] = [
+    { label: "Dashboard", to: "/admin", icon: LayoutDashboard },
+    { label: "Calendar", to: "/admin/calendar", icon: CalendarIcon },
+    { label: "Bookings & Payments", to: "/admin/bookings", icon: CalendarCheck, badge: pendingPaymentsCount },
+    { label: "Cancellations", to: "/admin/cancellations", icon: CalendarCheck },
+    { label: "Rooms & Cottages", to: "/admin/rooms", icon: BedDouble },
+    { label: "Customers", to: "/admin/customers", icon: Users },
+    { label: "Reports", to: "/admin/reports", icon: FileText },
   ];
 
   const currentLink = links.find((link) => location.pathname === link.to) || links[0];

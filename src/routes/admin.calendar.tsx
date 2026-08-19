@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+import { processAutoBookingStatuses } from "@/lib/booking-utils";
+
 export const Route = createFileRoute("/admin/calendar")({
   component: AvailabilityCalendarTab,
 });
@@ -30,7 +32,7 @@ function AvailabilityCalendarTab() {
         supabase.from("rooms").select("*"),
         supabase
           .from("bookings")
-          .select("*, room:rooms(name), profile:profiles!bookings_user_id_fkey(fullname,email)"),
+          .select("*, room:rooms(name), profile:profiles!bookings_user_id_fkey(fullname,email), payments(*)"),
         (async () => {
           try {
             const { data } = await supabase.from("resort_blocks" as any).select("*");
@@ -41,9 +43,13 @@ function AvailabilityCalendarTab() {
           }
         })(),
       ]);
+
+      const fetchedBookings = bookingsRes.data || [];
+      await processAutoBookingStatuses(fetchedBookings);
+
       return {
         rooms: roomsRes.data || [],
-        bookings: bookingsRes.data || [],
+        bookings: fetchedBookings,
         blocks: blocksRes.data || [],
       };
     },
@@ -153,22 +159,22 @@ function AvailabilityCalendarTab() {
   };
 
   return (
-    <Card className="p-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-4">
-          <h2 className="text-xl font-bold">
+    <Card className="p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-6">
+        <div className="flex items-center justify-between sm:justify-start gap-4">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-800">
             {currentMonth.toLocaleString("default", { month: "long", year: "numeric" })}
           </h2>
-          <div className="space-x-1">
-            <Button size="sm" variant="outline" onClick={prevMonth}>
+          <div className="space-x-1 shrink-0">
+            <Button size="sm" variant="outline" onClick={prevMonth} className="h-8 px-2.5 text-xs">
               Prev
             </Button>
-            <Button size="sm" variant="outline" onClick={nextMonth}>
+            <Button size="sm" variant="outline" onClick={nextMonth} className="h-8 px-2.5 text-xs">
               Next
             </Button>
           </div>
         </div>
-        <Button onClick={() => setBlockModalOpen(true)} variant="destructive" size="sm">
+        <Button onClick={() => setBlockModalOpen(true)} variant="destructive" size="sm" className="w-full sm:w-auto h-9 font-semibold justify-center">
           Block Resort Dates
         </Button>
       </div>

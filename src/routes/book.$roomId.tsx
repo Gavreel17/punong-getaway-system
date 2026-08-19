@@ -176,6 +176,15 @@ function BookPage() {
     }
   }, [form.check_in, form.check_out, room, bookings, blocks]);
 
+  const [singleFoamBeds, setSingleFoamBeds] = useState(0);
+  const [doubleFoamBeds, setDoubleFoamBeds] = useState(0);
+
+  const regularGuestsIncluded = maxCapacity || 6;
+  const numGuests = Number(form.guests) || 1;
+  const extraPersons = Math.max(0, numGuests - regularGuestsIncluded);
+
+  const additionalFee = (singleFoamBeds * 300) + (doubleFoamBeds * 600);
+
   const nights =
     form.check_in && form.check_out
       ? Math.max(
@@ -187,8 +196,8 @@ function BookPage() {
           ),
         )
       : 0;
-  const total = room ? Number(room.price) * nights : 0;
-
+  const baseTotal = room ? Number(room.price) * nights : 0;
+  const totalAmount = baseTotal + additionalFee;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -206,6 +215,15 @@ function BookPage() {
     setSubmitting(true);
 
     try {
+      const extraDetails = [];
+      if (extraPersons > 0) extraDetails.push(`Extra Persons: ${extraPersons}`);
+      if (singleFoamBeds > 0) extraDetails.push(`${singleFoamBeds} Single Foam Bed(s) (₱${singleFoamBeds * 300})`);
+      if (doubleFoamBeds > 0) extraDetails.push(`${doubleFoamBeds} Double Foam Bed(s) (₱${doubleFoamBeds * 600})`);
+      
+      const specialRequestsText = extraDetails.length > 0
+        ? extraDetails.join(" | ")
+        : null;
+
       const { data: newBooking, error } = await supabase
         .from("bookings")
         .insert({
@@ -217,7 +235,8 @@ function BookPage() {
           check_in: form.check_in,
           check_out: form.check_out,
           guests: form.guests,
-          total_amount: total,
+          total_amount: totalAmount,
+          special_requests: specialRequestsText,
           status: "approved",
         })
         .select()
@@ -358,45 +377,47 @@ function BookPage() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-slate-50">
       <Navbar />
-      <section className="container mx-auto grid gap-8 px-4 py-12 md:grid-cols-[1fr_360px] lg:grid-cols-[1fr_400px]">
-        <Card className="p-6 md:p-8">
-          <h1 className="text-3xl font-bold">Reserve {room.name}</h1>
-          <p className="mt-2 text-muted-foreground">{room.description}</p>
+      <section className="container mx-auto grid gap-6 sm:gap-8 px-3 sm:px-4 py-6 sm:py-12 md:grid-cols-[1fr_360px] lg:grid-cols-[1fr_400px]">
+        <Card className="p-4 sm:p-6 md:p-8 rounded-xl bg-white shadow-sm border-slate-200">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Reserve {room.name}</h1>
+          <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground">{room.description}</p>
 
-          <div className="mt-8 mb-8 border border-border/60 bg-slate-50/50 p-6 rounded-xl shadow-sm">
-            <h2 className="text-xl font-semibold mb-4 text-center">1. Select Your Dates</h2>
-            <div className="flex flex-col items-center justify-center">
-              <Calendar
-                mode="range"
-                selected={{
-                  from: form.check_in ? new Date(form.check_in + "T00:00:00") : undefined,
-                  to: form.check_out ? new Date(form.check_out + "T00:00:00") : undefined,
-                }}
-                onSelect={(range: any) => {
-                  let check_in = "";
-                  let check_out = "";
-                  if (range?.from) check_in = format(range.from, "yyyy-MM-dd");
-                  if (range?.to) check_out = format(range.to, "yyyy-MM-dd");
-                  setForm((f) => ({ ...f, check_in, check_out }));
-                }}
-                disabled={(date) => getDayStatus(date).status === "booked" || date < today}
-                className="bg-white rounded-md border shadow-sm p-4"
-                components={{ DayButton: CustomDayButton }}
-              />
+          <div className="mt-6 sm:mt-8 mb-6 sm:mb-8 border border-border/60 bg-slate-50/50 p-3 sm:p-6 rounded-xl shadow-xs overflow-hidden">
+            <h2 className="text-lg sm:text-xl font-semibold mb-4 text-center text-slate-800">1. Select Your Dates</h2>
+            <div className="flex flex-col items-center justify-center w-full">
+              <div className="w-full max-w-full overflow-x-auto flex justify-center py-1">
+                <Calendar
+                  mode="range"
+                  selected={{
+                    from: form.check_in ? new Date(form.check_in + "T00:00:00") : undefined,
+                    to: form.check_out ? new Date(form.check_out + "T00:00:00") : undefined,
+                  }}
+                  onSelect={(range: any) => {
+                    let check_in = "";
+                    let check_out = "";
+                    if (range?.from) check_in = format(range.from, "yyyy-MM-dd");
+                    if (range?.to) check_out = format(range.to, "yyyy-MM-dd");
+                    setForm((f) => ({ ...f, check_in, check_out }));
+                  }}
+                  disabled={(date) => getDayStatus(date).status === "booked" || date < today}
+                  className="bg-white rounded-lg border shadow-xs p-2 sm:p-4 max-w-full"
+                  components={{ DayButton: CustomDayButton }}
+                />
+              </div>
               
-              <div className="flex items-center justify-center gap-4 sm:gap-6 mt-6 text-sm text-muted-foreground flex-wrap">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-green-500"></div>
+              <div className="flex items-center justify-center gap-3 sm:gap-6 mt-4 sm:mt-6 text-xs sm:text-sm text-muted-foreground flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3.5 h-3.5 rounded bg-green-500"></div>
                   <span>Available</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-red-500"></div>
-                  <span>Booked / Unavailable</span>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3.5 h-3.5 rounded bg-red-500"></div>
+                  <span>Booked</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-primary ring-1 ring-primary ring-offset-1"></div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3.5 h-3.5 rounded bg-primary"></div>
                   <span>Selected</span>
                 </div>
               </div>
@@ -419,7 +440,7 @@ function BookPage() {
                 <Input required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
               </div>
               <div>
-                <Label>Guests {maxCapacity ? `(Max: ${maxCapacity})` : ""}</Label>
+                <Label>Number of Guests</Label>
                 <Input 
                   type="number" 
                   min={1} 
@@ -428,23 +449,77 @@ function BookPage() {
                   onChange={(e) => {
                     if (e.target.value === "") {
                       setForm({ ...form, guests: "" as any });
-                      setGuestExceeded(false);
                       return;
                     }
                     const val = Number(e.target.value);
-                    if (maxCapacity && val > maxCapacity) {
-                      setGuestExceeded(true);
-                    } else {
-                      setGuestExceeded(false);
-                    }
                     setForm({ ...form, guests: val });
                   }} 
                 />
-                {guestExceeded && maxCapacity && (
-                  <p className="mt-1.5 text-sm text-red-600 font-medium flex items-center gap-1.5">
-                    ❌ Guest count exceeds the maximum capacity of {maxCapacity}. Please reduce the number of guests to proceed.
-                  </p>
-                )}
+              </div>
+            </div>
+
+            {/* Extra Persons & Foam Beds Options */}
+            <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                <h4 className="font-bold text-slate-800 text-sm uppercase tracking-wider">Guest Breakdown & Extra Beds</h4>
+                <span className="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full font-semibold">
+                  Good for {regularGuestsIncluded} persons
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="bg-white p-3 rounded-lg border border-slate-200">
+                  <span className="text-slate-500 block text-xs font-semibold uppercase tracking-wider">Regular Guests Included</span>
+                  <span className="font-bold text-slate-800 text-base">{regularGuestsIncluded} persons</span>
+                </div>
+                <div className="bg-white p-3 rounded-lg border border-slate-200">
+                  <span className="text-slate-500 block text-xs font-semibold uppercase tracking-wider">Extra Persons</span>
+                  <span className="font-bold text-primary text-base">{extraPersons} person(s)</span>
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-2">
+                <Label className="font-bold text-slate-800 text-sm block">Extra Bed Type:</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-3">
+                    <div>
+                      <span className="font-bold text-slate-800 block text-sm">○ Single Foam Bed — ₱300/person</span>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-slate-600 mb-1.5 block font-medium">Number of Single Foam Beds</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={singleFoamBeds}
+                        onChange={(e) => setSingleFoamBeds(Math.max(0, parseInt(e.target.value) || 0))}
+                        className="h-9 border-slate-300"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-3">
+                    <div>
+                      <span className="font-bold text-slate-800 block text-sm">○ Double Foam Bed — ₱600/bed</span>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-slate-600 mb-1.5 block font-medium">Number of Double Foam Beds</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={doubleFoamBeds}
+                        onChange={(e) => setDoubleFoamBeds(Math.max(0, parseInt(e.target.value) || 0))}
+                        className="h-9 border-slate-300"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center bg-white p-3.5 rounded-xl border border-slate-200 text-sm">
+                <span className="font-medium text-slate-700">Additional Fee</span>
+                <span className="font-bold text-slate-900 text-base">₱{additionalFee.toLocaleString()}</span>
               </div>
             </div>
 
@@ -457,15 +532,10 @@ function BookPage() {
 
             <h2 className="text-xl font-semibold mb-2 border-t pt-6">3. Payment Details</h2>
             <div className="bg-amber-50/50 p-6 rounded-xl border border-amber-100">
-              <div className="flex items-center gap-2 mb-3 text-amber-900">
+              <div className="flex items-center gap-2 text-amber-900">
                 <Banknote className="w-6 h-6" />
                 <h3 className="font-bold text-lg">Pay at the Resort</h3>
               </div>
-
-              <p className="text-amber-700 text-sm italic border-t border-amber-200/50 pt-3">
-                <span className="font-bold mr-1">Policy:</span>
-                Reservations will only be held until the scheduled check-in time. Failure to arrive without prior notice may result in automatic cancellation.
-              </p>
             </div>
 
             <div className="bg-slate-50/50 p-6 rounded-xl border border-slate-200 mt-6 text-sm text-slate-600">
@@ -479,7 +549,7 @@ function BookPage() {
 
             <Button
               type="submit"
-              disabled={submitting || !!conflictWarning || !form.check_in || !form.check_out || guestExceeded}
+              disabled={submitting || !!conflictWarning || !form.check_in || !form.check_out}
               size="lg"
               className="bg-accent text-accent-foreground hover:bg-accent/90 w-full mt-4"
             >
@@ -510,8 +580,14 @@ function BookPage() {
                 </div>
               )}
               <div className="flex justify-between"><span>Nights</span><span>{nights > 0 ? nights : 0}</span></div>
+              {additionalFee > 0 && (
+                <div className="flex justify-between text-emerald-700 font-medium">
+                  <span>Additional Fee</span>
+                  <span>+₱{additionalFee.toLocaleString()}</span>
+                </div>
+              )}
               <div className="flex justify-between text-base font-bold pt-2 border-t border-border">
-                <span>Total</span><span className="text-primary">₱{total > 0 ? total.toLocaleString() : 0}</span>
+                <span>Total Amount</span><span className="text-primary">₱{totalAmount > 0 ? totalAmount.toLocaleString() : 0}</span>
               </div>
             </div>
           </Card>

@@ -31,6 +31,8 @@ import withReactContent from "sweetalert2-react-content";
 import { Eye, CheckCircle2, XCircle, Banknote, CreditCard, Search, CalendarClock, Trash2, Printer, RotateCcw } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
+import { processAutoBookingStatuses } from "@/lib/booking-utils";
+
 const MySwal = withReactContent(Swal);
 
 export const Route = createFileRoute("/admin/bookings")({
@@ -54,13 +56,8 @@ function BookingsTab() {
         .order("created_at", { ascending: false });
       if (error) throw error;
       
-      const today = new Date().toISOString().split("T")[0];
-      const pastBookings = data?.filter((b: any) => b.status === "approved" && b.check_out < today);
-      if (pastBookings && pastBookings.length > 0) {
-        for (const b of pastBookings) {
-          await supabase.from("bookings").update({ status: "completed" }).eq("id", b.id);
-          b.status = "completed";
-        }
+      if (data) {
+        await processAutoBookingStatuses(data);
       }
 
       return data;
@@ -154,9 +151,18 @@ function BookingsTab() {
       });
       if (error) return toast.error(error.message);
     }
+
+    const { data: b } = await supabase.from("bookings").select("status, check_out").eq("id", bookingId).single();
+    if (b && b.status === "no-show" && status === "verified") {
+      const today = new Date().toISOString().split("T")[0];
+      const newStatus = b.check_out <= today ? "completed" : "approved";
+      await supabase.from("bookings").update({ status: newStatus }).eq("id", bookingId);
+    }
+
     toast.success(`Payment marked as ${status}`);
     qc.invalidateQueries({ queryKey: ["admin-bookings-unified"] });
     qc.invalidateQueries({ queryKey: ["admin-stats"] });
+    qc.invalidateQueries({ queryKey: ["admin-availability-calendar"] });
   }
 
 
@@ -401,7 +407,7 @@ function BookingsTab() {
                         </>
                       )}
 
-                      {(b.status === "approved" || b.status === "completed") && (
+                      {(b.status === "approved" || b.status === "completed" || b.status === "no-show") && (
                         <>
                           {(!p || p.status !== "verified") && (
                             <Button
@@ -424,7 +430,7 @@ function BookingsTab() {
                             </Button>
                           )}
 
-                          {b.status !== "completed" && (
+                          {b.status !== "completed" && b.status !== "no-show" && (
                             <Button
                               size="sm"
                               variant="outline"
@@ -434,7 +440,7 @@ function BookingsTab() {
                               Mark Complete
                             </Button>
                           )}
-                          {b.status !== "completed" && (
+                          {b.status !== "completed" && b.status !== "no-show" && (
                             <Button
                               size="sm"
                               variant="outline"

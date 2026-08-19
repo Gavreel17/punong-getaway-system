@@ -17,14 +17,14 @@ export function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/90 backdrop-blur-md">
+      <div className="container mx-auto flex h-16 items-center justify-between px-3 sm:px-4">
         <Link
           to="/"
-          className="flex items-center gap-2 font-display text-xl font-bold text-primary"
+          className="flex items-center gap-2 font-display text-base sm:text-xl font-bold text-primary truncate"
         >
-          <Palmtree className="h-6 w-6 text-accent" />
-          Punong Spring Resort
+          <Palmtree className="h-5 w-5 sm:h-6 sm:w-6 text-accent shrink-0" />
+          <span className="truncate">Punong Spring Resort</span>
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
@@ -66,29 +66,34 @@ export function Navbar() {
           )}
         </div>
 
-        <button className="md:hidden" onClick={() => setOpen(!open)} aria-label="Menu">
-          {open ? <X /> : <Menu />}
+        <button 
+          className="flex items-center justify-center h-10 w-10 rounded-lg text-slate-700 hover:bg-slate-100 focus:outline-none md:hidden" 
+          onClick={() => setOpen(!open)} 
+          aria-label="Toggle navigation menu"
+        >
+          {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
 
       {open && (
-        <div className="border-t border-border bg-background md:hidden">
-          <div className="container mx-auto flex flex-col gap-2 px-4 py-4">
+        <div className="border-t border-border bg-background shadow-lg md:hidden animate-in slide-in-from-top-2 duration-200">
+          <div className="container mx-auto flex flex-col gap-1 px-4 py-4 max-h-[calc(100vh-4rem)] overflow-y-auto">
             {links.map((l) => (
               <Link
                 key={l.to}
                 to={l.to}
-                className="py-2 text-sm font-medium"
+                className="py-3 px-3 text-base font-semibold rounded-lg hover:bg-slate-100 text-slate-800 transition-colors"
                 onClick={() => setOpen(false)}
               >
                 {l.label}
               </Link>
             ))}
-            <div className="flex flex-col gap-2 pt-2">
+            <div className="flex flex-col gap-2 pt-3 border-t border-slate-100 mt-2">
               {user ? (
                 <>
                   <Button
-                    variant="ghost"
+                    variant="outline"
+                    className="w-full h-11 text-base font-medium justify-center"
                     onClick={() => {
                       navigate({ to: "/dashboard" });
                       setOpen(false);
@@ -97,7 +102,8 @@ export function Navbar() {
                     My Bookings
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="ghost"
+                    className="w-full h-11 text-base text-red-600 hover:bg-red-50 justify-center"
                     onClick={() => {
                       signOut();
                       setOpen(false);
@@ -109,7 +115,8 @@ export function Navbar() {
               ) : (
                 <>
                   <Button
-                    variant="ghost"
+                    variant="outline"
+                    className="w-full h-11 text-base font-medium justify-center"
                     onClick={() => {
                       navigate({ to: "/auth" });
                       setOpen(false);
@@ -118,7 +125,7 @@ export function Navbar() {
                     Sign in
                   </Button>
                   <Button
-                    className="bg-accent text-accent-foreground"
+                    className="w-full h-11 text-base font-semibold bg-accent text-accent-foreground hover:bg-accent/90 justify-center shadow-sm"
                     onClick={() => {
                       navigate({ to: "/rooms" });
                       setOpen(false);
