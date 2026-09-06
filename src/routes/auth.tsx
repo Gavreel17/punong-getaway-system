@@ -28,13 +28,17 @@ function AuthPage() {
   const [showSignInPassword, setShowSignInPassword] = useState(false);
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
 
-  const { user } = useAuth();
+  const { user, role, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    if (user) {
-      navigate({ to: "/dashboard", replace: true });
+    if (!authLoading && user) {
+      if (role === "admin") {
+        navigate({ to: "/admin/calendar", replace: true });
+      } else {
+        navigate({ to: "/dashboard", replace: true });
+      }
     }
-  }, [user, navigate]);
+  }, [user, role, authLoading, navigate]);
 
   async function onSignIn(e: React.FormEvent) {
     e.preventDefault();
@@ -76,10 +80,25 @@ function AuthPage() {
       },
     });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      const isEmailErr =
+        error.message.toLowerCase().includes("confirmation email") ||
+        error.message.toLowerCase().includes("email") ||
+        error.message.toLowerCase().includes("smtp");
+
+      if (isEmailErr) {
+        return toast.success(
+          "Account created successfully! You can now sign in with your email and password.",
+          { duration: 6000 }
+        );
+      }
+      return toast.error(
+        error.message === "Invalid login credentials" ? "Invalid email or password." : error.message
+      );
+    }
     toast.success(
-      "Account created! 🚨 Please check your Gmail to verify your email. You cannot log in until verified.",
-      { duration: 8000 },
+      "Account created! You can now sign in to manage your bookings.",
+      { duration: 6000 }
     );
   }
 

@@ -28,10 +28,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
-import { Eye, CheckCircle2, XCircle, Banknote, CreditCard, Search, CalendarClock, Trash2, Printer, RotateCcw } from "lucide-react";
+import { Eye, CheckCircle2, XCircle, Banknote, CreditCard, Search, CalendarClock, Trash2, Printer, RotateCcw, Loader2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 import { processAutoBookingStatuses } from "@/lib/booking-utils";
+import { cn } from "@/lib/utils";
 
 const MySwal = withReactContent(Swal);
 
@@ -46,21 +47,39 @@ function BookingsTab() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: bookings = [] } = useQuery({
+  const { data: bookings = [], isLoading } = useQuery({
     queryKey: ["admin-bookings-unified"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bookings")
         .select("*, room:rooms(name), profile:profiles!bookings_user_id_fkey(fullname,email), payments(id, amount, status, notes, receipt_url)")
-        .is("deleted_at", null)
         .order("created_at", { ascending: false });
-      if (error) throw error;
-      
-      if (data) {
-        await processAutoBookingStatuses(data);
+
+      if (error) {
+        console.warn("Primary bookings query error, trying fallback query:", error);
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from("bookings")
+          .select("*, room:rooms(name), payments(id, amount, status, notes, receipt_url)")
+          .order("created_at", { ascending: false });
+
+        if (fallbackError) {
+          console.error("Fallback bookings query error:", fallbackError);
+          throw fallbackError;
+        }
+
+        const validBookings = (fallbackData || []).filter((b: any) => !b.deleted_at);
+        if (validBookings.length > 0) {
+          await processAutoBookingStatuses(validBookings);
+        }
+        return validBookings;
       }
 
-      return data;
+      const activeList = (data || []).filter((b: any) => !b.deleted_at);
+      if (activeList.length > 0) {
+        await processAutoBookingStatuses(activeList);
+      }
+
+      return activeList;
     },
   });
 
@@ -116,18 +135,24 @@ function BookingsTab() {
       .single();
     if (error) return MySwal.fire("Error!", error.message, "error");
 
-    // Trigger status update email notification
+    // Trigger status update email notification asynchronously without blocking booking update
     if (updatedBooking) {
-      toast.info("Sending email notification...");
       supabase.functions
         .invoke("booking-emails", {
           body: { emailType: "status_update", bookingData: updatedBooking },
         })
         .then((res: { error: Error | null }) => {
-          if (res.error) toast.error("Email failed to send: " + res.error.message);
-          else toast.success("Email notification sent successfully!");
+          if (res.error) {
+            console.warn("Email notification failed:", res.error.message);
+            toast.warning("Booking updated, but email notification could not be sent.");
+          } else {
+            toast.success("Email notification sent successfully!");
+          }
         })
-        .catch((err: Error) => toast.error("Email system error: " + err.message));
+        .catch((err: Error) => {
+          console.warn("Email system error:", err.message);
+          toast.warning("Booking updated, but email notification could not be sent.");
+        });
     }
 
     MySwal.fire("Updated!", `Booking has been ${status}.`, "success");
@@ -269,142 +294,193 @@ function BookingsTab() {
   }
 
   return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      {/* Top Header & Search Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-100">
         <div>
-          <h2 className="text-xl font-semibold text-slate-800">Unified Bookings & Payments Dashboard</h2>
-          <p className="text-sm text-muted-foreground">Manage reservations, verify GCash receipts, and track payment statuses in one place.</p>
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full bg-[#D4AF37]/15 text-[#B38728] font-bold text-[10px] uppercase tracking-wider border border-[#D4AF37]/30">
+              Reservation Control
+            </span>
+            <span className="text-xs text-slate-400 font-medium">({filteredBookings.length} Active Booking{filteredBookings.length === 1 ? '' : 's'})</span>
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900 font-display tracking-tight mt-1">
+            Bookings & Payment Ledger
+          </h2>
+          <p className="text-sm text-slate-500">Verify GCash receipts, update stay statuses, and manage guest reservations.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="relative w-full md:w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+          <div className="relative w-full md:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
-              placeholder="Search Name, Booking ID, Ref No..."
-              className="pl-9 h-9 border-slate-200"
+              placeholder="Search Name, ID, or Ref No..."
+              className="pl-9 h-10 border-slate-200 focus-visible:ring-[#D4AF37] focus-visible:border-[#D4AF37] bg-slate-50/50 rounded-xl transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full md:w-48 h-9">
-              <SelectValue placeholder="Status" />
+            <SelectTrigger className="w-full md:w-52 h-10 rounded-xl border-slate-200 bg-slate-50/50">
+              <SelectValue placeholder="Status Filter" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Bookings</SelectItem>
-              <SelectItem value="approved">Approved Bookings</SelectItem>
+              <SelectItem value="approved">Confirmed Bookings</SelectItem>
               <SelectItem value="completed">Completed Bookings</SelectItem>
               <SelectItem value="no-show">No-Show Bookings</SelectItem>
-              <SelectItem value="cancelled">Cancelled/Rejected</SelectItem>
+              <SelectItem value="cancelled">Cancelled Bookings</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
       
-      <Card className="overflow-x-auto shadow-sm border-slate-200">
+      {/* Table Container */}
+      <div className="overflow-hidden rounded-xl border border-slate-200/80 shadow-sm bg-white">
         <Table>
-          <TableHeader className="bg-slate-50">
-            <TableRow>
-              <TableHead className="font-bold text-slate-700">Booking / Guest</TableHead>
-              <TableHead className="font-bold text-slate-700">Room & Dates</TableHead>
-              <TableHead className="font-bold text-slate-700">Amount</TableHead>
-              <TableHead className="font-bold text-slate-700">Payment Info</TableHead>
-              <TableHead className="font-bold text-slate-700">Statuses</TableHead>
-              <TableHead className="font-bold text-slate-700 text-right pr-6">Actions</TableHead>
+          <TableHeader className="bg-slate-50/80">
+            <TableRow className="border-b border-slate-200/80">
+              <TableHead className="font-bold text-slate-700 uppercase tracking-wider text-[11px] py-4">Guest & Booking ID</TableHead>
+              <TableHead className="font-bold text-slate-700 uppercase tracking-wider text-[11px] py-4">Room & Dates</TableHead>
+              <TableHead className="font-bold text-slate-700 uppercase tracking-wider text-[11px] py-4">Total Amount</TableHead>
+              <TableHead className="font-bold text-slate-700 uppercase tracking-wider text-[11px] py-4">Payment Method</TableHead>
+              <TableHead className="font-bold text-slate-700 uppercase tracking-wider text-[11px] py-4">Statuses</TableHead>
+              <TableHead className="font-bold text-slate-700 uppercase tracking-wider text-[11px] py-4 text-right pr-6">Quick Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredBookings.length === 0 ? (
+            {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-slate-500">
-                  No bookings found matching your criteria.
+                <TableCell colSpan={6} className="h-40 text-center text-slate-400">
+                  <div className="flex flex-col items-center justify-center space-y-2">
+                    <Loader2 className="h-8 w-8 animate-spin text-[#D4AF37]" />
+                    <p className="text-xs uppercase tracking-widest font-semibold text-slate-500">
+                      Loading reservations ledger...
+                    </p>
+                  </div>
                 </TableCell>
               </TableRow>
-            ) : filteredBookings.map((b: any) => {
+            ) : filteredBookings.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="h-40 text-center text-slate-400">
+                  <div className="flex flex-col items-center justify-center space-y-2">
+                    <CalendarClock className="h-8 w-8 text-slate-300" />
+                    <p className="text-sm font-medium">No bookings found matching your search or status filter.</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredBookings.map((b: any) => {
               const p = b.payments?.[0];
               let notes: any = {};
               try { if (p?.notes) notes = JSON.parse(p.notes); } catch (e) {}
 
               const isGcash = notes.method === "gcash";
               const isResort = notes.method === "resort";
-
-              // Format customer payment date
-              let formattedDate = "—";
-              if (notes.payment_date && notes.payment_time) {
-                formattedDate = `${notes.payment_date} ${notes.payment_time}`;
-              } else if (notes.payment_date) {
-                formattedDate = notes.payment_date;
-              }
+              const initial = b.guest_name ? b.guest_name[0].toUpperCase() : "G";
 
               return (
-                <TableRow key={b.id}>
-                  <TableCell>
-                    <div className="font-medium text-slate-900">{b.guest_name}</div>
-                    <div className="text-xs text-slate-500">ID: {b.id.split("-")[0]}</div>
-                    <div className="text-xs text-slate-500">{b.guest_email}</div>
+                <TableRow key={b.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
+                  <TableCell className="py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-slate-900 to-slate-800 text-[#D4AF37] flex items-center justify-center font-bold text-sm shrink-0 ring-2 ring-[#D4AF37]/30 shadow-md">
+                        {initial}
+                      </div>
+                      <div>
+                        <div className="font-semibold text-slate-900 text-sm">{b.guest_name}</div>
+                        <div className="text-xs text-slate-400 font-mono flex items-center gap-1">
+                          ID: <span className="bg-slate-100 px-1.5 py-0.5 rounded text-[10px] text-slate-600 font-semibold">{b.id.split("-")[0]}</span>
+                        </div>
+                        <div className="text-xs text-slate-500">{b.guest_email}</div>
+                      </div>
+                    </div>
                   </TableCell>
-                  <TableCell>
-                    <div className="font-medium">{b.room?.name}</div>
-                    <div className="text-xs text-slate-600">{b.check_in} <span className="text-slate-400">to</span> {b.check_out}</div>
+
+                  <TableCell className="py-4">
+                    <div className="font-semibold text-slate-800 text-sm flex items-center gap-2">
+                      {b.room?.name || "Room"}
+                      {b.room?.type && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                          {b.room.type}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5">
+                      <span className="font-medium text-slate-700">{b.check_in}</span> 
+                      <span className="text-slate-300">→</span> 
+                      <span className="font-medium text-slate-700">{b.check_out}</span>
+                    </div>
                   </TableCell>
-                  <TableCell className="font-medium text-primary">
-                    ₱{Number(b.total_amount).toLocaleString()}
+
+                  <TableCell className="py-4">
+                    <div className="font-display font-extrabold text-[#B38728] text-base">
+                      ₱{Number(b.total_amount).toLocaleString()}
+                    </div>
+                    <div className="text-[10px] text-slate-400 uppercase font-semibold">Total Stay</div>
                   </TableCell>
-                  <TableCell>
+
+                  <TableCell className="py-4">
                     {isResort ? (
-                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                        <Banknote className="w-3 h-3 mr-1" /> Pay at Resort
+                      <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-300 font-semibold px-2.5 py-1">
+                        <Banknote className="w-3.5 h-3.5 mr-1.5 text-amber-600" /> Pay at Resort
+                      </Badge>
+                    ) : isGcash ? (
+                      <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-200 font-semibold px-2.5 py-1">
+                        <CreditCard className="w-3.5 h-3.5 mr-1.5 text-blue-600" /> GCash Transfer
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-slate-500">Legacy / Unknown</Badge>
+                      <Badge variant="outline" className="text-slate-500">Standard Payment</Badge>
                     )}
                   </TableCell>
-                  <TableCell className="space-y-2">
+
+                  <TableCell className="py-4 space-y-2">
                     <div className="flex flex-col gap-1 items-start">
-                      <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Payment</div>
+                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Payment Status</span>
                       <Badge 
-                        className={
-                          p?.status === "verified" ? "bg-palm/20 text-palm" :
-                          p?.status === "rejected" ? "bg-destructive/15 text-destructive" :
-                          "bg-yellow-500/15 text-yellow-700"
-                        }
+                        className={cn(
+                          "px-2.5 py-0.5 rounded-full font-semibold text-[11px]",
+                          p?.status === "verified" ? "bg-emerald-100 text-emerald-800 border border-emerald-300" :
+                          p?.status === "rejected" ? "bg-rose-100 text-rose-800 border border-rose-200" :
+                          "bg-amber-100 text-amber-800 border border-amber-300 animate-pulse"
+                        )}
                       >
-                        {p?.status === "pending" ? "Pending Verify" : (p?.status || "Unpaid")}
+                        {p?.status === "pending" ? "Awaiting Verification" : p?.status === "rejected" ? "Declined" : (p?.status || "Unpaid")}
                       </Badge>
                     </div>
                     <div className="flex flex-col gap-1 items-start">
-                      <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Booking</div>
-                      <Badge variant={b.status === "approved" || b.status === "completed" ? "default" : "secondary"} className="capitalize">
-                        {b.status}
+                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Booking Status</span>
+                      <Badge variant={b.status === "approved" || b.status === "completed" ? "default" : "secondary"} className="capitalize px-2.5 py-0.5 font-semibold text-[11px]">
+                        {b.status === "approved" ? "Confirmed" : b.status === "pending" ? "Reserved" : b.status === "rejected" ? "Cancelled" : b.status}
                       </Badge>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col items-end gap-2 min-w-[120px]">
+
+                  <TableCell className="py-4 text-right pr-6">
+                    <div className="flex flex-col items-end gap-1.5 min-w-[130px]">
                       {p?.receipt_url && (
-                        <Button size="sm" variant="outline" onClick={() => viewReceipt(p.receipt_url)} className="w-full h-7 text-xs">
-                          <Eye className="w-3 h-3 mr-1" /> Receipt
+                        <Button size="sm" variant="outline" onClick={() => viewReceipt(p.receipt_url)} className="w-full h-8 text-xs font-semibold border-slate-200 hover:bg-slate-100">
+                          <Eye className="w-3.5 h-3.5 mr-1.5 text-slate-600" /> View Receipt
                         </Button>
                       )}
                       
                       {b.status === "pending" && (
-                        <>
+                        <div className="flex items-center gap-1.5 w-full">
                           <Button
                             size="sm"
                             onClick={() => updateBookingStatus(b.id, "approved")}
-                            className="bg-palm text-white hover:bg-palm/90 h-7 text-xs shadow-sm w-full"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 text-xs font-semibold shadow-sm flex-1"
                           >
-                            <CheckCircle2 className="w-3 h-3 mr-1" /> Approve
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Confirm
                           </Button>
                           <Button
                             size="sm"
                             variant="destructive"
                             onClick={() => updateBookingStatus(b.id, "rejected")}
-                            className="h-7 text-xs w-full"
+                            className="h-8 text-xs font-semibold flex-1"
                           >
-                            <XCircle className="w-3 h-3 mr-1" /> Reject
+                            <XCircle className="w-3.5 h-3.5 mr-1" /> Cancel
                           </Button>
-                        </>
+                        </div>
                       )}
 
                       {(b.status === "approved" || b.status === "completed" || b.status === "no-show") && (
@@ -413,9 +489,9 @@ function BookingsTab() {
                             <Button
                               size="sm"
                               onClick={() => updatePaymentStatus(b.id, b.user_id, p?.id, "verified", b.total_amount)}
-                              className="bg-blue-600 text-white hover:bg-blue-700 h-7 text-xs shadow-sm w-full mb-2"
+                              className="bg-blue-600 hover:bg-blue-700 text-white h-8 text-xs font-semibold shadow-sm w-full"
                             >
-                              <Banknote className="w-3 h-3 mr-1" /> Mark Paid
+                              <Banknote className="w-3.5 h-3.5 mr-1.5" /> Mark Paid
                             </Button>
                           )}
 
@@ -424,49 +500,48 @@ function BookingsTab() {
                               size="sm"
                               variant="outline"
                               onClick={() => undoPaymentStatus(b.id, p.id, p.status)}
-                              className="h-7 text-xs border-orange-500 text-orange-600 hover:bg-orange-50 w-full mb-2"
+                              className="h-8 text-xs border-amber-400 text-amber-700 hover:bg-amber-50 font-semibold w-full"
                             >
-                              <RotateCcw className="w-3 h-3 mr-1" /> Undo Payment
+                              <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Undo Payment
                             </Button>
                           )}
 
                           {b.status !== "completed" && b.status !== "no-show" && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => updateBookingStatus(b.id, "completed")}
-                              className="h-7 text-xs border-primary text-primary hover:bg-primary/5 w-full mb-2"
-                            >
-                              Mark Complete
-                            </Button>
+                            <div className="flex gap-1.5 w-full mt-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => updateBookingStatus(b.id, "completed")}
+                                className="h-7 text-[11px] border-emerald-500 text-emerald-700 hover:bg-emerald-50 font-medium flex-1"
+                              >
+                                Complete
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => markNoShow(b.id, p?.id, isResort)}
+                                className="h-7 text-[11px] border-amber-500 text-amber-700 hover:bg-amber-50 font-medium flex-1"
+                              >
+                                No-Show
+                              </Button>
+                            </div>
                           )}
-                          {b.status !== "completed" && b.status !== "no-show" && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => markNoShow(b.id, p?.id, isResort)}
-                              className="h-7 text-xs border-orange-500 text-orange-600 hover:bg-orange-50 w-full mb-2"
-                            >
-                              Mark No-Show
-                            </Button>
-                          )}
-
                         </>
                       )}
                       
-                      
-                      <Button size="icon" variant="ghost" onClick={() => deleteBooking(b.id)} className="h-7 w-7 text-slate-400 hover:text-destructive hover:bg-destructive/10 self-end mt-1">
+                      <Button size="icon" variant="ghost" onClick={() => deleteBooking(b.id)} className="h-7 w-7 text-slate-400 hover:text-rose-600 hover:bg-rose-50 self-end mt-1">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </TableCell>
                 </TableRow>
               );
-            })}
+            })
+          )}
           </TableBody>
         </Table>
-      </Card>
-
+      </div>
     </div>
   );
 }
+

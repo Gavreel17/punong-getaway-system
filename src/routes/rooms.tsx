@@ -97,7 +97,7 @@ function RoomsPage() {
       }
     }
 
-    if (hasPending) return { status: "pending", color: "yellow", text: "Pending" };
+    if (hasPending) return { status: "pending", color: "yellow", text: "Reserved" };
     return { status: "available", color: "green", text: "Available" };
   };
 

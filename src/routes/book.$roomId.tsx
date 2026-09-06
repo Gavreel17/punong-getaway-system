@@ -17,10 +17,18 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
-import { AlertCircle, Banknote } from "lucide-react";
+import { AlertCircle, Banknote, ArrowLeft, Check, Loader2 } from "lucide-react";
 import { DayButton } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 const MySwal = withReactContent(Swal);
 
@@ -43,6 +51,8 @@ function BookPage() {
     fullname: "",
     email: "",
     phone: "",
+    age: "",
+    address: "",
     check_in: searchParams.check_in || "",
     check_out: searchParams.check_out || "",
     guests: 1,
@@ -51,6 +61,7 @@ function BookPage() {
 
 
   const [submitting, setSubmitting] = useState(false);
+  const [showReminderModal, setShowReminderModal] = useState(false);
   const [conflictWarning, setConflictWarning] = useState<string | null>(null);
   const [guestExceeded, setGuestExceeded] = useState(false);
 
@@ -179,11 +190,12 @@ function BookPage() {
   const [singleFoamBeds, setSingleFoamBeds] = useState(0);
   const [doubleFoamBeds, setDoubleFoamBeds] = useState(0);
 
-  const regularGuestsIncluded = maxCapacity || 6;
+  const isUnlimited = String(room?.capacity || "").toLowerCase().includes("unlimited");
+  const regularGuestsIncluded = isUnlimited ? Infinity : (maxCapacity || 6);
   const numGuests = Number(form.guests) || 1;
-  const extraPersons = Math.max(0, numGuests - regularGuestsIncluded);
+  const extraPersons = isUnlimited ? 0 : Math.max(0, numGuests - regularGuestsIncluded);
 
-  const additionalFee = (singleFoamBeds * 300) + (doubleFoamBeds * 600);
+  const additionalFee = room?.type === "room" ? (singleFoamBeds * 300) + (doubleFoamBeds * 600) : 0;
 
   const nights =
     form.check_in && form.check_out
@@ -199,11 +211,21 @@ function BookPage() {
   const baseTotal = room ? Number(room.price) * nights : 0;
   const totalAmount = baseTotal + additionalFee;
 
-  async function onSubmit(e: React.FormEvent) {
+  function handleInitiateBooking(e: React.FormEvent) {
     e.preventDefault();
     if (!user || !room) return;
     if (conflictWarning) return toast.error(conflictWarning);
     if (nights <= 0) return toast.error("Invalid dates selected");
+
+    if (!form.fullname.trim()) {
+      return toast.error("Please enter your full name.");
+    }
+    if (!form.email.trim()) {
+      return toast.error("Please enter your email address.");
+    }
+    if (!form.phone.trim()) {
+      return toast.error("Please enter your phone number.");
+    }
 
     const phoneRegex = /^(09|\+639)\d{9}$/;
     if (!phoneRegex.test(form.phone.replace(/[\s-]/g, ""))) {
@@ -212,10 +234,37 @@ function BookPage() {
       );
     }
 
+    if (!String(form.age).trim()) {
+      return toast.error("Please enter your age.");
+    }
+    const parsedAge = Number(form.age);
+    if (isNaN(parsedAge) || parsedAge <= 0) {
+      return toast.error("Please enter a valid age.");
+    }
+    if (parsedAge < 18) {
+      return toast.error("The primary guest must be at least 18 years old to make a reservation.");
+    }
+
+    if (!form.address.trim()) {
+      return toast.error("Please enter your address.");
+    }
+
+    if (!form.guests || Number(form.guests) <= 0) {
+      return toast.error("Please enter the number of guests.");
+    }
+
+    // Validation passed! Open Reminder Modal before submitting
+    setShowReminderModal(true);
+  }
+
+  async function handleConfirmAndSubmit() {
+    if (submitting || !user || !room) return;
     setSubmitting(true);
 
     try {
       const extraDetails = [];
+      extraDetails.push(`Age: ${form.age}`);
+      extraDetails.push(`Address: ${form.address.trim()}`);
       if (extraPersons > 0) extraDetails.push(`Extra Persons: ${extraPersons}`);
       if (singleFoamBeds > 0) extraDetails.push(`${singleFoamBeds} Single Foam Bed(s) (₱${singleFoamBeds * 300})`);
       if (doubleFoamBeds > 0) extraDetails.push(`${doubleFoamBeds} Double Foam Bed(s) (₱${doubleFoamBeds * 600})`);
@@ -266,15 +315,27 @@ function BookPage() {
         console.error("Payment insert failed", paymentError);
       }
 
-      // Trigger confirmation email
+      // Trigger confirmation email notification asynchronously without blocking reservation
       if (newBooking) {
         const bookingDataWithRoom = { ...newBooking, room: { name: room.name, type: room.type } };
         supabase.functions
           .invoke("booking-emails", {
             body: { emailType: "confirmation", bookingData: bookingDataWithRoom },
           })
-          .catch((err: Error) => console.error("Email system error: " + err.message));
+          .then((res: { error: Error | null }) => {
+            if (res?.error) {
+              console.warn("Email notification failed:", res.error.message);
+              toast.warning("Booking saved, but email notification could not be sent.");
+            }
+          })
+          .catch((err: Error) => {
+            console.warn("Email system error:", err.message);
+            toast.warning("Booking saved, but email notification could not be sent.");
+          });
       }
+
+      // Close reminder modal
+      setShowReminderModal(false);
 
       await MySwal.fire({
         title: "Booking Submitted!",
@@ -425,22 +486,43 @@ function BookPage() {
           </div>
 
           <h2 className="text-xl font-semibold mb-4 border-t pt-6">2. Guest Details</h2>
-          <form id="booking-form" onSubmit={onSubmit} className="grid gap-6">
+          <form id="booking-form" onSubmit={handleInitiateBooking} className="grid gap-6">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <Label>Full Name</Label>
-                <Input required value={form.fullname} onChange={(e) => setForm({ ...form, fullname: e.target.value })} />
+                <Label>Full Name <span className="text-red-500">*</span></Label>
+                <Input required placeholder="Full Name" value={form.fullname} onChange={(e) => setForm({ ...form, fullname: e.target.value })} />
               </div>
               <div>
-                <Label>Email</Label>
-                <Input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                <Label>Email <span className="text-red-500">*</span></Label>
+                <Input type="email" required placeholder="Email Address" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
               </div>
               <div>
-                <Label>Phone</Label>
-                <Input required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                <Label>Phone <span className="text-red-500">*</span></Label>
+                <Input required placeholder="e.g. 09120627744" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
               </div>
               <div>
-                <Label>Number of Guests</Label>
+                <Label>Age <span className="text-red-500">*</span></Label>
+                <Input 
+                  type="number" 
+                  min={18} 
+                  max={120} 
+                  required 
+                  placeholder="e.g. 25" 
+                  value={form.age} 
+                  onChange={(e) => setForm({ ...form, age: e.target.value })} 
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Label>Address <span className="text-red-500">*</span></Label>
+                <Input 
+                  required 
+                  placeholder="Street, Barangay, City, Province" 
+                  value={form.address} 
+                  onChange={(e) => setForm({ ...form, address: e.target.value })} 
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Label>Number of Guests <span className="text-red-500">*</span></Label>
                 <Input 
                   type="number" 
                   min={1} 
@@ -470,52 +552,54 @@ function BookPage() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="bg-white p-3 rounded-lg border border-slate-200">
                   <span className="text-slate-500 block text-xs font-semibold uppercase tracking-wider">Regular Guests Included</span>
-                  <span className="font-bold text-slate-800 text-base">{regularGuestsIncluded} persons</span>
+                  <span className="font-bold text-slate-800 text-base">{isUnlimited ? "Unlimited" : `${regularGuestsIncluded} persons`}</span>
                 </div>
                 <div className="bg-white p-3 rounded-lg border border-slate-200">
                   <span className="text-slate-500 block text-xs font-semibold uppercase tracking-wider">Extra Persons</span>
-                  <span className="font-bold text-primary text-base">{extraPersons} person(s)</span>
+                  <span className="font-bold text-primary text-base">{isUnlimited ? "N/A" : `${extraPersons} person(s)`}</span>
                 </div>
               </div>
 
-              <div className="space-y-3 pt-2">
-                <Label className="font-bold text-slate-800 text-sm block">Extra Bed Type:</Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-3">
-                    <div>
-                      <span className="font-bold text-slate-800 block text-sm">○ Single Foam Bed — ₱300/person</span>
+              {room?.type === "room" && (
+                <div className="space-y-3 pt-2">
+                  <Label className="font-bold text-slate-800 text-sm block">Extra Bed Type:</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-3">
+                      <div>
+                        <span className="font-bold text-slate-800 block text-sm">○ Single Foam Bed — ₱300/person</span>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-slate-600 mb-1.5 block font-medium">Number of Single Foam Beds</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={singleFoamBeds}
+                          onChange={(e) => setSingleFoamBeds(Math.max(0, parseInt(e.target.value) || 0))}
+                          className="h-9 border-slate-300"
+                          placeholder="0"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <Label className="text-xs text-slate-600 mb-1.5 block font-medium">Number of Single Foam Beds</Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        value={singleFoamBeds}
-                        onChange={(e) => setSingleFoamBeds(Math.max(0, parseInt(e.target.value) || 0))}
-                        className="h-9 border-slate-300"
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
 
-                  <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-3">
-                    <div>
-                      <span className="font-bold text-slate-800 block text-sm">○ Double Foam Bed — ₱600/bed</span>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-slate-600 mb-1.5 block font-medium">Number of Double Foam Beds</Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        value={doubleFoamBeds}
-                        onChange={(e) => setDoubleFoamBeds(Math.max(0, parseInt(e.target.value) || 0))}
-                        className="h-9 border-slate-300"
-                        placeholder="0"
-                      />
+                    <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-3">
+                      <div>
+                        <span className="font-bold text-slate-800 block text-sm">○ Double Foam Bed — ₱600/bed</span>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-slate-600 mb-1.5 block font-medium">Number of Double Foam Beds</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={doubleFoamBeds}
+                          onChange={(e) => setDoubleFoamBeds(Math.max(0, parseInt(e.target.value) || 0))}
+                          className="h-9 border-slate-300"
+                          placeholder="0"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <div className="flex justify-between items-center bg-white p-3.5 rounded-xl border border-slate-200 text-sm">
                 <span className="font-medium text-slate-700">Additional Fee</span>
@@ -547,11 +631,29 @@ function BookPage() {
               </p>
             </div>
 
+            {(!form.fullname.trim() || !form.email.trim() || !form.phone.trim() || !String(form.age).trim() || !form.address.trim() || !form.guests) && (
+              <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+                <span>Please complete all required guest details (Full Name, Email, Phone, Age, Address, and Number of Guests) to proceed with your booking.</span>
+              </div>
+            )}
+
             <Button
               type="submit"
-              disabled={submitting || !!conflictWarning || !form.check_in || !form.check_out}
+              disabled={
+                submitting ||
+                !!conflictWarning ||
+                !form.check_in ||
+                !form.check_out ||
+                !form.fullname.trim() ||
+                !form.email.trim() ||
+                !form.phone.trim() ||
+                !String(form.age).trim() ||
+                !form.address.trim() ||
+                !form.guests
+              }
               size="lg"
-              className="bg-accent text-accent-foreground hover:bg-accent/90 w-full mt-4"
+              className="bg-accent text-accent-foreground hover:bg-accent/90 w-full mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? "Submitting…" : "Confirm Reservation"}
             </Button>
@@ -593,6 +695,118 @@ function BookPage() {
           </Card>
         </div>
       </section>
+
+      {/* Before You Submit Your Reservation - Reminder Modal */}
+      <Dialog open={showReminderModal} onOpenChange={(open) => !submitting && setShowReminderModal(open)}>
+        <DialogContent className="w-[95vw] max-w-lg sm:max-w-xl p-0 overflow-hidden border-slate-200 rounded-2xl sm:rounded-3xl shadow-2xl bg-white max-h-[90vh] flex flex-col my-auto">
+          {/* Header */}
+          <DialogHeader className="shrink-0 p-4 sm:p-6 bg-slate-900 text-white border-b border-slate-800 text-left">
+            <div className="flex items-center gap-2 mb-1 text-[11px] font-bold tracking-wider text-[#D4AF37] uppercase">
+              <span>Punong Spring Resort</span>
+            </div>
+            <DialogTitle className="text-lg sm:text-xl font-bold font-display text-white pr-6">
+              Before You Submit Your Reservation
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-300 mt-1">
+              Please review this important notice regarding your booking and payment verification.
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Scrollable Content Body */}
+          <div className="overflow-y-auto flex-1 p-4 sm:p-6 space-y-4">
+            {/* Reminder Callout Box */}
+            <div className="p-4 rounded-xl bg-amber-50/90 border border-amber-200 text-slate-800 space-y-2.5">
+              <div className="font-bold text-amber-950 text-sm flex items-center gap-1.5">
+                <span>📌 Reservation & Payment Reminder</span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                Before completing your reservation, please review your booking details carefully.
+              </p>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                After your reservation is successfully submitted, please make sure to <strong className="text-slate-900 font-semibold">download and save your booking receipt</strong>.
+              </p>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                The downloaded receipt must be <strong className="text-slate-900 font-semibold">presented upon payment/check-in</strong> as proof of your reservation and payment transaction.
+              </p>
+              <p className="text-xs sm:text-sm font-semibold text-amber-900 leading-relaxed">
+                Please keep your receipt safe and accessible on your phone.
+              </p>
+            </div>
+
+            {/* Quick Booking Recap Box */}
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2.5">
+              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                Booking Recap
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-slate-700">
+                <span className="text-slate-500">Accommodation:</span>
+                <strong className="text-slate-900 text-left sm:text-right break-words">
+                  {room.name} ({room.type === "villa" ? "Function Hall" : room.type})
+                </strong>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-slate-700">
+                <span className="text-slate-500">Stay Dates:</span>
+                <strong className="text-slate-900 text-left sm:text-right font-mono text-[11px] sm:text-xs">
+                  {form.check_in} → {form.check_out} ({nights} night{nights > 1 ? "s" : ""})
+                </strong>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-slate-700">
+                <span className="text-slate-500">Guest Name:</span>
+                <strong className="text-slate-900 text-left sm:text-right break-words">
+                  {form.fullname}
+                </strong>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-slate-700">
+                <span className="text-slate-500">Contact:</span>
+                <span className="text-slate-800 text-left sm:text-right break-all">
+                  {form.email} • {form.phone}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                <span className="font-semibold text-slate-700">Total Price:</span>
+                <strong className="text-base text-[#B38728] font-bold">
+                  ₱{totalAmount.toLocaleString()}
+                </strong>
+              </div>
+            </div>
+          </div>
+
+          {/* Sticky Footer */}
+          <DialogFooter className="shrink-0 p-4 sm:p-5 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowReminderModal(false)}
+              disabled={submitting}
+              className="w-full sm:w-auto h-11 px-5 rounded-xl font-semibold border-slate-300 text-slate-700 hover:bg-slate-100 cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1.5" /> Go Back / Review Booking
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmAndSubmit}
+              disabled={submitting}
+              className="w-full sm:w-auto h-11 px-6 rounded-xl font-bold bg-[#B38728] hover:bg-[#96701d] text-white shadow-md cursor-pointer border border-[#D4AF37]/50"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting Reservation...
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4 mr-1.5" /> ✓ Confirm & Submit Reservation
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Footer />
     </div>
   );

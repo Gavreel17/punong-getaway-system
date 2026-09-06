@@ -40,41 +40,23 @@ function Index() {
   const { data: feedbacks = [] } = useQuery({
     queryKey: ["approved-feedbacks"],
     queryFn: async () => {
-      // 1. Fetch all feedbacks safely
+      try {
+        const { data, error } = await supabase.rpc("get_approved_feedbacks" as any);
+        if (!error && data) return data;
+      } catch (e) {
+        console.warn("RPC get_approved_feedbacks unavailable, using table query fallback:", e);
+      }
+
       const { data: feedbackRows, error } = await supabase
         .from("feedbacks")
         .select("*")
+        .eq("is_approved", true)
         .order("created_at", { ascending: false });
 
-      if (error || !feedbackRows) {
-        console.error("Error fetching feedbacks:", error);
-        return [];
-      }
-
-      // 2. Try to enrich with booking guest_name if booking_ids exist
-      try {
-        const bookingIds = feedbackRows.map((f: any) => f.booking_id).filter(Boolean);
-        if (bookingIds.length > 0) {
-          const { data: bookingRows } = await supabase
-            .from("bookings")
-            .select("id, guest_name")
-            .in("id", bookingIds);
-
-          if (bookingRows && bookingRows.length > 0) {
-            const bookingMap = new Map(bookingRows.map((b: any) => [b.id, b.guest_name]));
-            return feedbackRows.map((f: any) => ({
-              ...f,
-              resolved_name: f.guest_name || bookingMap.get(f.booking_id) || "Verified Guest",
-            }));
-          }
-        }
-      } catch (e) {
-        console.warn("Could not enrich booking guest names:", e);
-      }
-
+      if (error || !feedbackRows) return [];
       return feedbackRows.map((f: any) => ({
         ...f,
-        resolved_name: f.guest_name || "Verified Guest",
+        guest_name: f.guest_name || "Verified Guest",
       }));
     },
   });

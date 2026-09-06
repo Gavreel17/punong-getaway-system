@@ -2,10 +2,18 @@
 // when h3 has already swallowed the throw into a generic 500 Response.
 
 let lastCapturedError: { error: unknown; at: number } | undefined;
-const TTL_MS = 5_000;
+const TTL_MS = 15_000;
 
 function record(error: unknown) {
-  lastCapturedError = { error, at: Date.now() };
+  if (error != null) {
+    console.error("[SSR Error Captured]:", error);
+    lastCapturedError = { error, at: Date.now() };
+  }
+}
+
+if (typeof process !== "undefined" && process.on) {
+  process.on("uncaughtException", (err) => record(err));
+  process.on("unhandledRejection", (reason) => record(reason));
 }
 
 if (typeof globalThis.addEventListener === "function") {

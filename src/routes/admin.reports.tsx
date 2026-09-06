@@ -176,7 +176,7 @@ function ReportsDashboard() {
   const statusPieData = useMemo(() => {
     return [
       { name: "Confirmed", value: stats.confirmed },
-      { name: "Pending", value: stats.pending },
+      { name: "Reserved", value: stats.pending },
       { name: "Cancelled", value: stats.cancelled },
       { name: "Completed", value: stats.completed },
       { name: "No-Show", value: stats.noShow },
@@ -272,45 +272,52 @@ function ReportsDashboard() {
   };
 
   if (isLoading) {
-    return <div className="p-8 text-center animate-pulse">Loading reports data...</div>;
+    return (
+      <div className="p-16 text-center animate-pulse flex flex-col items-center justify-center space-y-3">
+        <BarChart3 className="h-10 w-10 text-[#D4AF37] animate-bounce" />
+        <p className="font-display text-base font-bold text-slate-700">Compiling Executive Resort Analytics...</p>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 print:m-0 print:p-0">
       {/* Header & Controls */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 print:hidden">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-2 border-b border-slate-100 print:hidden">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <BarChart3 className="h-8 w-8 text-primary" /> Reports Dashboard
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full bg-[#D4AF37]/15 text-[#B38728] font-bold text-[10px] uppercase tracking-wider border border-[#D4AF37]/30">
+              Executive Analytics
+            </span>
+            <span className="text-xs text-slate-400 font-medium">Financial & Occupancy Intelligence</span>
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900 font-display tracking-tight mt-1 flex items-center gap-2">
+            Reports & Performance Intelligence
           </h2>
-          <p className="text-muted-foreground mt-1">
-            Comprehensive analytics, occupancy, and revenue reports.
-          </p>
+          <p className="text-sm text-slate-500">Analyze revenue streams, room occupancy rates, guest payment trends, and historical logs.</p>
         </div>
 
-        <div className="flex flex-wrap items-end gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-          <div className="space-y-1">
-            <Label className="text-xs text-slate-500 font-semibold uppercase">Date Range Filter</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-36 h-9"
-              />
-              <span className="text-slate-400">to</span>
-              <Input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-36 h-9"
-              />
-            </div>
+        <div className="flex flex-wrap items-center gap-3 bg-slate-50/80 p-2.5 rounded-2xl border border-slate-200/80">
+          <div className="flex items-center gap-2">
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-36 h-9 rounded-xl border-slate-200 bg-white text-xs"
+            />
+            <span className="text-xs text-slate-400 font-semibold">to</span>
+            <Input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-36 h-9 rounded-xl border-slate-200 bg-white text-xs"
+            />
           </div>
-          <div className="flex items-center gap-2 ml-2">
+          <div className="flex items-center gap-1.5">
             <Button
               variant="outline"
               size="sm"
+              className="h-9 px-3 rounded-xl text-xs font-semibold hover:bg-white"
               onClick={() => {
                 setStartDate(format(startOfMonth(new Date()), "yyyy-MM-dd"));
                 setEndDate(format(endOfDay(new Date()), "yyyy-MM-dd"));
@@ -321,6 +328,7 @@ function ReportsDashboard() {
             <Button
               variant="outline"
               size="sm"
+              className="h-9 px-3 rounded-xl text-xs font-semibold hover:bg-white"
               onClick={() => {
                 setStartDate(format(startOfYear(new Date()), "yyyy-MM-dd"));
                 setEndDate(format(endOfDay(new Date()), "yyyy-MM-dd"));
@@ -329,56 +337,64 @@ function ReportsDashboard() {
               This Year
             </Button>
           </div>
-          <div className="ml-auto pl-4 border-l flex gap-2">
-            <Button variant="secondary" onClick={handlePrint}>
-              <Printer className="mr-2 h-4 w-4" /> Print / PDF
+          <div className="pl-2 border-l border-slate-200">
+            <Button variant="default" size="sm" onClick={handlePrint} className="h-9 px-4 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 shadow-md">
+              <Printer className="mr-1.5 h-4 w-4 text-[#D4AF37]" /> Print / PDF
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Print Header (Only visible when printing) */}
+      {/* Print Header */}
       <div className="hidden print:block text-center mb-8 border-b pb-4">
-        <h1 className="text-3xl font-bold uppercase tracking-wider">Punong Spring Resort</h1>
-        <h2 className="text-xl font-semibold mt-2">Management Report</h2>
-        <p className="text-slate-600 mt-1">
-          Period: {format(parseISO(startDate), "MMM dd, yyyy")} to {format(parseISO(endDate), "MMM dd, yyyy")}
+        <h1 className="text-3xl font-bold font-display uppercase tracking-wider text-slate-900">Punong Spring Resort</h1>
+        <h2 className="text-xl font-semibold mt-1 text-[#B38728]">Executive Management Report</h2>
+        <p className="text-slate-600 mt-1 text-sm">
+          Reporting Period: {format(parseISO(startDate), "MMM dd, yyyy")} to {format(parseISO(endDate), "MMM dd, yyyy")}
         </p>
-        <p className="text-sm text-slate-400 mt-1">Generated on: {format(new Date(), "MMM dd, yyyy HH:mm")}</p>
+        <p className="text-xs text-slate-400 mt-1">Generated: {format(new Date(), "MMM dd, yyyy HH:mm")}</p>
       </div>
 
-      {/* Top Stats Cards */}
+      {/* Top Luxury Stats Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <Card className="p-5 bg-gradient-to-br from-blue-50 to-white border-blue-100 shadow-sm">
-          <p className="text-xs uppercase tracking-wider text-blue-600 font-bold mb-1">Total Bookings</p>
-          <p className="text-3xl font-black text-slate-800">{stats.total}</p>
-        </Card>
-        <Card className="p-5 bg-gradient-to-br from-emerald-50 to-white border-emerald-100 shadow-sm">
-          <p className="text-xs uppercase tracking-wider text-emerald-600 font-bold mb-1">Confirmed</p>
-          <p className="text-3xl font-black text-slate-800">{stats.confirmed}</p>
-        </Card>
+        <div className="rounded-2xl p-5 bg-white border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-bl-full pointer-events-none"></div>
+          <p className="text-[10px] uppercase tracking-wider font-extrabold text-blue-600 mb-1">Total Bookings</p>
+          <p className="text-3xl font-black text-slate-900 font-display">{stats.total}</p>
+        </div>
 
-        <Card className="p-5 bg-gradient-to-br from-red-50 to-white border-red-100 shadow-sm">
-          <p className="text-xs uppercase tracking-wider text-red-600 font-bold mb-1">Cancelled</p>
-          <p className="text-3xl font-black text-slate-800">{stats.cancelled}</p>
-        </Card>
-        <Card className="p-5 bg-gradient-to-br from-orange-50 to-white border-orange-100 shadow-sm">
-          <p className="text-xs uppercase tracking-wider text-orange-600 font-bold mb-1">No-Shows</p>
-          <p className="text-3xl font-black text-slate-800">{stats.noShow}</p>
-        </Card>
-        <Card className="p-5 bg-gradient-to-br from-primary/10 to-white border-primary/20 shadow-sm relative overflow-hidden">
-          <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none">
-            <BarChart3 className="w-24 h-24 -mb-4 -mr-4" />
+        <div className="rounded-2xl p-5 bg-white border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/10 rounded-bl-full pointer-events-none"></div>
+          <p className="text-[10px] uppercase tracking-wider font-extrabold text-emerald-600 mb-1">Confirmed Stays</p>
+          <p className="text-3xl font-black text-slate-900 font-display">{stats.confirmed}</p>
+        </div>
+
+        <div className="rounded-2xl p-5 bg-white border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-rose-500/10 rounded-bl-full pointer-events-none"></div>
+          <p className="text-[10px] uppercase tracking-wider font-extrabold text-rose-600 mb-1">Cancelled</p>
+          <p className="text-3xl font-black text-slate-900 font-display">{stats.cancelled}</p>
+        </div>
+
+        <div className="rounded-2xl p-5 bg-white border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-amber-500/10 rounded-bl-full pointer-events-none"></div>
+          <p className="text-[10px] uppercase tracking-wider font-extrabold text-amber-600 mb-1">No-Show Guests</p>
+          <p className="text-3xl font-black text-slate-900 font-display">{stats.noShow}</p>
+        </div>
+
+        <div className="rounded-2xl p-5 bg-gradient-to-br from-slate-900 to-slate-950 text-white border border-[#D4AF37]/30 shadow-lg relative overflow-hidden group">
+          <div className="absolute right-0 bottom-0 opacity-15 pointer-events-none">
+            <BarChart3 className="w-24 h-24 -mb-4 -mr-4 text-[#D4AF37]" />
           </div>
-          <p className="text-xs uppercase tracking-wider text-primary font-bold mb-1">Total Revenue</p>
-          <p className="text-3xl font-black text-slate-800">₱{stats.revenue.toLocaleString()}</p>
-        </Card>
+          <p className="text-[10px] uppercase tracking-widest font-extrabold text-amber-300 mb-1">Total Period Revenue</p>
+          <p className="text-3xl font-black text-white font-display">₱{stats.revenue.toLocaleString()}</p>
+        </div>
       </div>
+
 
       {/* Secondary Stats Cards for Payments */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
         <Card className="p-4 bg-white border-slate-200 shadow-sm">
-          <p className="text-xs uppercase tracking-wider text-amber-600 font-bold mb-1">Pending Payments</p>
+          <p className="text-xs uppercase tracking-wider text-amber-600 font-bold mb-1">Awaiting Payments</p>
           <p className="text-2xl font-black text-slate-800">{stats.pendingPayments}</p>
         </Card>
         <Card className="p-4 bg-white border-slate-200 shadow-sm">

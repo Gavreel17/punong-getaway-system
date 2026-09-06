@@ -488,3 +488,126 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
 $$;
 
 GRANT EXECUTE ON FUNCTION public.get_approved_feedbacks() TO anon, authenticated;
+
+-- Create inquiries table
+CREATE TABLE IF NOT EXISTS public.inquiries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  message TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'unread' CHECK (status IN ('unread', 'read', 'replied')),
+  admin_reply TEXT,
+  replied_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.inquiries ENABLE ROW LEVEL SECURITY;
+
+-- Policies
+-- 1. Anyone (guests or logged-in users) can submit an inquiry via Contact Us
+CREATE POLICY "Anyone can submit inquiry" ON public.inquiries
+  FOR INSERT TO anon, authenticated
+  WITH CHECK (true);
+
+-- 2. Admins can view, update, and delete inquiries
+CREATE POLICY "Admins can manage inquiries" ON public.inquiries
+  FOR ALL TO authenticated
+  USING (public.has_role(auth.uid(), 'admin'));
+
+-- Grants
+GRANT ALL ON public.inquiries TO service_role;
+GRANT INSERT ON public.inquiries TO anon, authenticated;
+GRANT SELECT, UPDATE, DELETE ON public.inquiries TO authenticated;
+
+CREATE INDEX IF NOT EXISTS idx_inquiries_status ON public.inquiries (status);
+CREATE INDEX IF NOT EXISTS idx_inquiries_created_at ON public.inquiries (created_at DESC);
+
+-- Update status constraint on public.inquiries to include 'waiting_reply'
+ALTER TABLE public.inquiries DROP CONSTRAINT IF EXISTS inquiries_status_check;
+ALTER TABLE public.inquiries ADD CONSTRAINT inquiries_status_check CHECK (status IN ('unread', 'read', 'replied', 'waiting_reply'));
+
+-- Allow authenticated customers to view and update their own inquiries
+DROP POLICY IF EXISTS "Customers can view own inquiries" ON public.inquiries;
+CREATE POLICY "Customers can view own inquiries" ON public.inquiries
+  FOR SELECT TO authenticated
+  USING (
+    customer_id = auth.uid() 
+    OR ((auth.jwt() ->> 'email') IS NOT NULL AND email = (auth.jwt() ->> 'email'))
+    OR public.has_role(auth.uid(), 'admin')
+  );
+
+DROP POLICY IF EXISTS "Customers can update own inquiries" ON public.inquiries;
+CREATE POLICY "Customers can update own inquiries" ON public.inquiries
+  FOR UPDATE TO authenticated
+  USING (
+    customer_id = auth.uid() 
+    OR ((auth.jwt() ->> 'email') IS NOT NULL AND email = (auth.jwt() ->> 'email'))
+    OR public.has_role(auth.uid(), 'admin')
+  );
+
+-- Create inquiry_messages table for full two-way threaded conversations
+CREATE TABLE IF NOT EXISTS public.inquiry_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  inquiry_id UUID NOT NULL REFERENCES public.inquiries(id) ON DELETE CASCADE,
+  sender_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  sender_role TEXT NOT NULL CHECK (sender_role IN ('customer', 'admin')),
+  message TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  read_at TIMESTAMPTZ
+);
+
+ALTER TABLE public.inquiry_messages ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Admins can manage all inquiry_messages" ON public.inquiry_messages;
+CREATE POLICY "Admins can manage all inquiry_messages" ON public.inquiry_messages
+  FOR ALL TO authenticated
+  USING (public.has_role(auth.uid(), 'admin'));
+
+DROP POLICY IF EXISTS "Users can view relevant inquiry_messages" ON public.inquiry_messages;
+CREATE POLICY "Users can view relevant inquiry_messages" ON public.inquiry_messages
+  FOR SELECT TO authenticated
+  USING (
+    public.has_role(auth.uid(), 'admin')
+    OR EXISTS (
+      SELECT 1 FROM public.inquiries i
+      WHERE i.id = inquiry_messages.inquiry_id
+      AND (
+        i.customer_id = auth.uid() 
+        OR ((auth.jwt() ->> 'email') IS NOT NULL AND i.email = (auth.jwt() ->> 'email'))
+      )
+    )
+  );
+
+DROP POLICY IF EXISTS "Anyone can insert customer message" ON public.inquiry_messages;
+CREATE POLICY "Anyone can insert customer message" ON public.inquiry_messages
+  FOR INSERT TO anon, authenticated
+  WITH CHECK (
+    sender_role = 'customer'
+    OR public.has_role(auth.uid(), 'admin')
+  );
+
+DROP POLICY IF EXISTS "Users can mark messages read" ON public.inquiry_messages;
+CREATE POLICY "Users can mark messages read" ON public.inquiry_messages
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_role(auth.uid(), 'admin')
+    OR EXISTS (
+      SELECT 1 FROM public.inquiries i
+      WHERE i.id = inquiry_messages.inquiry_id
+      AND (
+        i.customer_id = auth.uid() 
+        OR ((auth.jwt() ->> 'email') IS NOT NULL AND i.email = (auth.jwt() ->> 'email'))
+      )
+    )
+  );
+
+GRANT ALL ON public.inquiry_messages TO service_role;
+GRANT SELECT, INSERT, UPDATE ON public.inquiry_messages TO authenticated;
+GRANT INSERT ON public.inquiry_messages TO anon;
+
+CREATE INDEX IF NOT EXISTS idx_inquiry_messages_inquiry_id ON public.inquiry_messages (inquiry_id, created_at ASC);
+
+

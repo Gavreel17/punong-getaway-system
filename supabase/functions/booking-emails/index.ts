@@ -13,9 +13,16 @@ const corsHeaders = {
 };
 
 interface EmailPayload {
-  emailType: "confirmation" | "status_update";
+  emailType: "confirmation" | "status_update" | "inquiry_reply";
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  bookingData: any;
+  bookingData?: any;
+  replyData?: {
+    recipientEmail: string;
+    recipientName: string;
+    subject?: string;
+    message: string;
+    originalMessage?: string;
+  };
 }
 
 serve(async (req: Request) => {
@@ -25,7 +32,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { emailType, bookingData }: EmailPayload = await req.json();
+    const { emailType, bookingData, replyData }: EmailPayload = await req.json();
 
     if (!BREVO_API_KEY) {
       throw new Error("Missing BREVO_API_KEY environment variable");
@@ -33,12 +40,12 @@ serve(async (req: Request) => {
 
     let subject = "";
     let htmlContent = "";
+    let recipientEmail = "";
+    let recipientName = "";
 
-    const formatCurrency = (amount: number) => {
-      return `₱${amount.toLocaleString()}`;
-    };
-
-    if (emailType === "confirmation") {
+    if (emailType === "confirmation" && bookingData) {
+      recipientEmail = bookingData.guest_email;
+      recipientName = bookingData.guest_name;
       subject = "Booking Confirmation - Punong Spring Resort";
       htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
@@ -59,7 +66,9 @@ serve(async (req: Request) => {
           <p>Best regards,<br>Punong Spring Resort Team</p>
         </div>
       `;
-    } else if (emailType === "status_update") {
+    } else if (emailType === "status_update" && bookingData) {
+      recipientEmail = bookingData.guest_email;
+      recipientName = bookingData.guest_name;
       subject = `Booking Update: ${bookingData.status.toUpperCase()} - Punong Spring Resort`;
       htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
@@ -80,8 +89,39 @@ serve(async (req: Request) => {
           <p>Best regards,<br>Punong Spring Resort Team</p>
         </div>
       `;
+    } else if (emailType === "inquiry_reply" && replyData) {
+      recipientEmail = replyData.recipientEmail;
+      recipientName = replyData.recipientName;
+      subject = replyData.subject || "Inquiry Response – Punong Spring Resort";
+      htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; line-height: 1.6;">
+          <div style="border-bottom: 2px solid #D4AF37; padding-bottom: 12px; margin-bottom: 20px;">
+            <h2 style="color: #0D1F1D; margin: 0; font-size: 22px;">Punong Spring Resort</h2>
+            <span style="color: #D4AF37; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">Customer Care & Inquiries</span>
+          </div>
+          <p>Dear ${replyData.recipientName || "Guest"},</p>
+          <p>Thank you for reaching out to Punong Spring Resort. Here is the response to your inquiry:</p>
+          <div style="background-color: #f8fafc; border-left: 4px solid #D4AF37; padding: 16px 20px; margin: 20px 0; border-radius: 4px; font-size: 15px; color: #1e293b; white-space: pre-wrap;">${replyData.message}</div>
+          ${replyData.originalMessage ? `
+            <div style="background-color: #f1f5f9; padding: 12px 16px; border-radius: 6px; margin: 20px 0; font-size: 12px; color: #64748b;">
+              <strong>Your original message:</strong><br />
+              "${replyData.originalMessage}"
+            </div>
+          ` : ""}
+          <p>If you have any further questions or wish to proceed with a booking, please reply to this email or visit our website.</p>
+          <p style="margin-top: 30px;">Warm regards,<br /><strong>Punong Spring Resort Team</strong></p>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 25px 0 15px;" />
+          <p style="font-size: 11px; color: #94a3b8; text-align: center;">
+            Punong Spring Resort • Coastal Road, Buburay, Dimataling, Zamboanga del Sur • +63 917 123 4567 • hello@punongresort.com
+          </p>
+        </div>
+      `;
     } else {
       throw new Error("Invalid emailType provided.");
+    }
+
+    if (!recipientEmail) {
+      throw new Error("Missing recipient email.");
     }
 
     // Call Brevo API to send the email
@@ -99,8 +139,8 @@ serve(async (req: Request) => {
         },
         to: [
           {
-            email: bookingData.guest_email,
-            name: bookingData.guest_name,
+            email: recipientEmail,
+            name: recipientName || "Guest",
           },
         ],
         subject: subject,

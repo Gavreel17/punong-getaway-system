@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute } from '@tanstack/react-router'
+import { useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Card } from "@/components/ui/card";
@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Mail, Phone, MapPin } from "lucide-react";
+import { Mail, Phone, MapPin, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -21,12 +23,92 @@ export const Route = createFileRoute("/contact")({
 });
 
 function Contact() {
+  const { user } = useAuth();
   const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [submitting, setSubmitting] = useState(false);
 
-  function onSubmit(e: React.FormEvent) {
+  // Pre-fill with customer profile details if logged in
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from("profiles")
+        .select("fullname, email")
+        .eq("id", user.id)
+        .single()
+        .then(({ data }) => {
+          if (data) {
+            setForm((prev) => ({
+              ...prev,
+              name: prev.name || data.fullname || "",
+              email: prev.email || data.email || user.email || "",
+            }));
+          }
+        });
+    }
+  }, [user]);
+
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    toast.success("Thanks! We'll be in touch soon.");
-    setForm({ name: "", email: "", message: "" });
+    if (submitting) return;
+
+    const trimmedName = form.name.trim();
+    const trimmedEmail = form.email.trim().toLowerCase();
+    const trimmedMessage = form.message.trim();
+
+    if (!trimmedName) {
+      return toast.error("Please enter your name.");
+    }
+    if (!trimmedEmail) {
+      return toast.error("Please enter your email address.");
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      return toast.error("Please provide a valid email address.");
+    }
+    if (!trimmedMessage) {
+      return toast.error("Please enter your message.");
+    }
+
+    setSubmitting(true);
+
+    try {
+      const inquiryId = crypto.randomUUID();
+
+      const { error: inqError } = await supabase
+        .from("inquiries")
+        .insert({
+          id: inquiryId,
+          customer_id: user?.id || null,
+          name: trimmedName,
+          email: trimmedEmail,
+          message: trimmedMessage,
+          status: "waiting_reply",
+        });
+
+      if (inqError) {
+        console.error("Inquiry insertion error:", inqError);
+        throw new Error(inqError.message);
+      }
+
+      await supabase.from("inquiry_messages").insert({
+        inquiry_id: inquiryId,
+        sender_id: user?.id || null,
+        sender_role: "customer",
+        message: trimmedMessage,
+        read_at: new Date().toISOString(),
+      });
+
+      toast.success("Your message has been sent successfully. The resort will get back to you soon.");
+      setForm((prev) => ({
+        name: user ? prev.name : "",
+        email: user ? prev.email : "",
+        message: "",
+      }));
+    } catch (err: any) {
+      toast.error(err.message || "Failed to send message. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -94,9 +176,20 @@ function Contact() {
             </div>
             <Button
               type="submit"
-              className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+              disabled={submitting}
+              className="w-full bg-accent text-accent-foreground hover:bg-accent/90 flex items-center justify-center gap-2"
             >
-              Send Message
+              {submitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Sending Message...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  Send Message
+                </>
+              )}
             </Button>
           </form>
         </Card>

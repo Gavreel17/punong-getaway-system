@@ -1,5 +1,6 @@
 import "./lib/error-capture";
 
+import { isRedirect, isNotFound } from "@tanstack/react-router";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 
@@ -30,8 +31,9 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
     return response;
   }
 
-  console.error(consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`));
-  return new Response(renderErrorPage(), {
+  const err = consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`);
+  console.error(err);
+  return new Response(renderErrorPage(err), {
     status: 500,
     headers: { "content-type": "text/html; charset=utf-8" },
   });
@@ -43,9 +45,24 @@ export default {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
-    } catch (error) {
-      console.error(error);
-      return new Response(renderErrorPage(), {
+    } catch (error: any) {
+      if (
+        isRedirect(error) ||
+        isNotFound(error) ||
+        error instanceof Response ||
+        (error != null &&
+          typeof error === "object" &&
+          ("statusCode" in error ||
+            "status" in error ||
+            "isRedirect" in error ||
+            "isNotFound" in error ||
+            "href" in error ||
+            "to" in error))
+      ) {
+        throw error;
+      }
+      console.error("Server fetch error:", error);
+      return new Response(renderErrorPage(error), {
         status: 500,
         headers: { "content-type": "text/html; charset=utf-8" },
       });

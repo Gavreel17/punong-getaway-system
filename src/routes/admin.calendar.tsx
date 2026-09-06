@@ -159,49 +159,66 @@ function AvailabilityCalendarTab() {
   };
 
   return (
-    <Card className="p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-6">
-        <div className="flex items-center justify-between sm:justify-start gap-4">
-          <h2 className="text-lg sm:text-xl font-bold text-slate-800">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      {/* Calendar Control Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 pb-2 border-b border-slate-100">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full bg-[#D4AF37]/15 text-[#B38728] font-bold text-[10px] uppercase tracking-wider border border-[#D4AF37]/30">
+              Interactive Matrix
+            </span>
+            <span className="text-xs text-slate-400 font-medium">Real-Time Room Occupancy Grid</span>
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900 font-display tracking-tight mt-1 flex items-center gap-3">
             {currentMonth.toLocaleString("default", { month: "long", year: "numeric" })}
           </h2>
-          <div className="space-x-1 shrink-0">
-            <Button size="sm" variant="outline" onClick={prevMonth} className="h-8 px-2.5 text-xs">
-              Prev
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <Button size="sm" variant="ghost" onClick={prevMonth} className="h-8 px-3 text-xs font-bold text-slate-700 hover:bg-white rounded-lg">
+              ← Prev
             </Button>
-            <Button size="sm" variant="outline" onClick={nextMonth} className="h-8 px-2.5 text-xs">
-              Next
+            <Button size="sm" variant="ghost" onClick={nextMonth} className="h-8 px-3 text-xs font-bold text-slate-700 hover:bg-white rounded-lg">
+              Next →
             </Button>
           </div>
+
+          <Button 
+            onClick={() => setBlockModalOpen(true)} 
+            variant="destructive" 
+            size="sm" 
+            className="h-10 px-4 rounded-xl font-bold shadow-md cursor-pointer bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-700 hover:to-red-800"
+          >
+            Block Resort Dates
+          </Button>
         </div>
-        <Button onClick={() => setBlockModalOpen(true)} variant="destructive" size="sm" className="w-full sm:w-auto h-9 font-semibold justify-center">
-          Block Resort Dates
-        </Button>
       </div>
 
-      <div className="overflow-x-auto pb-4">
-        <table className="w-full border-collapse border min-w-[800px] text-sm">
+      {/* Availability Grid Container */}
+      <div className="overflow-x-auto pb-4 rounded-2xl border border-slate-200/80 shadow-sm bg-white">
+        <table className="w-full border-collapse min-w-[850px] text-sm">
           <thead>
-            <tr>
-              <th className="border p-2 bg-muted text-left sticky left-0 z-10 w-48">
+            <tr className="bg-slate-50/90 border-b border-slate-200">
+              <th className="p-3.5 text-left sticky left-0 z-20 bg-slate-100/90 backdrop-blur-md w-52 font-bold text-slate-700 text-xs uppercase tracking-wider border-r border-slate-200">
                 Accommodation
               </th>
               {days.map((d) => (
-                <th key={d} className="border p-2 bg-muted text-center w-8 min-w-8">
+                <th key={d} className="p-2 text-center w-9 min-w-9 font-bold text-slate-700 text-xs border-r border-slate-200/60">
                   {d}
                 </th>
               ))}
             </tr>
-            <tr className="bg-secondary/30">
-              <td className="border p-2 font-bold sticky left-0 bg-secondary/50 z-10">
-                Global Status
+            <tr className="bg-amber-500/5 border-b border-slate-200">
+              <td className="p-3.5 font-bold text-slate-800 text-xs uppercase tracking-wider sticky left-0 bg-amber-50/90 backdrop-blur-md z-20 border-r border-slate-200">
+                Overall Occupancy
               </td>
               {days.map((d) => {
                 const cell = getGlobalCellData(d);
                 return (
-                  <td key={d} className="border p-1" title={cell.tooltip}>
+                  <td key={d} className="p-1 border-r border-slate-200/40" title={cell.tooltip}>
                     <div
-                      className={`w-full h-8 rounded flex items-center justify-center text-xs border shadow-sm ${cell.color}`}
+                      className={`w-full h-8 rounded-lg flex items-center justify-center text-[10px] font-bold shadow-2xl transition-transform hover:scale-105 ${cell.color}`}
                     >
                       {cell.icon}
                     </div>
@@ -212,12 +229,12 @@ function AvailabilityCalendarTab() {
           </thead>
           <tbody>
             {rooms.map((r: any) => (
-              <tr key={r.id}>
-                <td className="border p-2 font-medium sticky left-0 bg-background z-10 truncate">
+              <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                <td className="p-3 sticky left-0 bg-white z-10 border-r border-slate-200 shadow-sm">
                   <div className="flex flex-col">
-                    <span>{r.name}</span>
-                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                      {r.type || "ROOM"}
+                    <span className="font-bold text-slate-900 text-sm">{r.name}</span>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                      {r.type === 'villa' ? 'Function Hall' : (r.type || "ROOM")}
                     </span>
                   </div>
                 </td>
@@ -226,13 +243,13 @@ function AvailabilityCalendarTab() {
                   return (
                     <td
                       key={d}
-                      className={`border p-0.5 ${cell.type === "booking" ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}
+                      className={`p-1 border-r border-slate-100 ${cell.type === "booking" ? "cursor-pointer hover:opacity-90 transition-opacity" : ""}`}
                       onClick={() => {
                         if (cell.type === "booking") setSelectedBooking(cell.booking);
                       }}
                     >
                       <div
-                        className={`w-full h-8 rounded-sm ${cell.color} ${cell.type === "free" ? "opacity-30" : ""} flex items-center justify-center text-white/80 font-bold`}
+                        className={`w-full h-8 rounded-lg ${cell.color} ${cell.type === "free" ? "opacity-25 hover:opacity-50" : ""} flex items-center justify-center text-white text-[11px] font-bold shadow-sm transition-all`}
                       >
                         {cell.text}
                       </div>
@@ -245,84 +262,90 @@ function AvailabilityCalendarTab() {
         </table>
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-4 text-sm">
+      {/* Legend Footer */}
+      <div className="flex flex-wrap items-center gap-6 p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700">
+        <span className="text-slate-400 uppercase text-[10px] tracking-widest font-bold">Grid Legend:</span>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-green-500 rounded-sm"></div> Available
+          <div className="w-4 h-4 bg-green-500 rounded-md shadow-sm"></div> Available Stay
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-yellow-400 rounded-sm"></div> Limited / Pending
+          <div className="w-4 h-4 bg-yellow-500 rounded-md shadow-sm"></div> Reserved Booking
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-red-500 rounded-sm"></div> Fully Booked
+          <div className="w-4 h-4 bg-red-500 rounded-md shadow-sm"></div> Confirmed Reservation
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-slate-500 rounded-sm"></div> Maintenance
+          <div className="w-4 h-4 bg-slate-500 rounded-md shadow-sm"></div> Maintenance Closure
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-red-900 rounded-sm flex items-center justify-center text-white text-[10px] font-bold">
+          <div className="w-4 h-4 bg-red-900 rounded-md shadow-sm flex items-center justify-center text-white text-[9px] font-extrabold">
             X
           </div>{" "}
-          Blocked Override
+          Resort Blocked Override
         </div>
       </div>
 
+      {/* Block Dates Modal */}
       <Dialog open={blockModalOpen} onOpenChange={setBlockModalOpen}>
-        <DialogContent>
+        <DialogContent className="rounded-2xl max-w-md">
           <DialogHeader>
-            <DialogTitle>Block Resort Dates</DialogTitle>
+            <DialogTitle className="text-lg font-bold font-display text-rose-700">Block Resort Dates</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleBlockSubmit} className="grid gap-4 py-4">
+          <form onSubmit={handleBlockSubmit} className="grid gap-4 py-2">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Start Date</Label>
+                <Label className="text-xs font-semibold uppercase text-slate-600">Start Date</Label>
                 <Input
                   type="date"
                   required
+                  className="mt-1 rounded-xl text-xs"
                   value={blockForm.start_date}
                   onChange={(e) => setBlockForm({ ...blockForm, start_date: e.target.value })}
                 />
               </div>
               <div>
-                <Label>End Date</Label>
+                <Label className="text-xs font-semibold uppercase text-slate-600">End Date</Label>
                 <Input
                   type="date"
                   required
+                  className="mt-1 rounded-xl text-xs"
                   value={blockForm.end_date}
                   onChange={(e) => setBlockForm({ ...blockForm, end_date: e.target.value })}
                 />
               </div>
             </div>
             <div>
-              <Label>Reason (Optional)</Label>
+              <Label className="text-xs font-semibold uppercase text-slate-600">Reason (Optional)</Label>
               <Input
-                placeholder="e.g. Severe Weather, Private Event"
+                placeholder="e.g. Private Event, Maintenance, Weather"
+                className="mt-1 rounded-xl text-xs"
                 value={blockForm.reason}
                 onChange={(e) => setBlockForm({ ...blockForm, reason: e.target.value })}
               />
             </div>
-            <Button type="submit" variant="destructive">
-              Apply Block
+            <Button type="submit" variant="destructive" className="rounded-xl font-bold mt-2">
+              Apply Block Override
             </Button>
           </form>
 
-          <div className="mt-4">
-            <h4 className="font-semibold text-sm mb-2">Active Blocks</h4>
+          <div className="mt-4 pt-4 border-t border-slate-200">
+            <h4 className="font-bold text-xs uppercase tracking-wider text-slate-700 mb-2">Active Override Blocks</h4>
             {blocks.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No active blocks</p>
+              <p className="text-xs text-slate-400 italic">No active blocks configured</p>
             ) : (
               <ul className="space-y-2">
                 {blocks.map((b: any) => (
                   <li
                     key={b.id}
-                    className="flex justify-between items-center text-sm border p-2 rounded bg-muted/50"
+                    className="flex justify-between items-center text-xs border p-2.5 rounded-xl bg-slate-50 font-medium"
                   >
                     <span>
-                      {b.start_date} to {b.end_date} {b.reason && `(${b.reason})`}
+                      <strong>{b.start_date}</strong> to <strong>{b.end_date}</strong> {b.reason && <span className="text-slate-500">({b.reason})</span>}
                     </span>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="text-destructive h-6 px-2"
+                      className="text-rose-600 hover:bg-rose-50 h-7 px-2 font-bold"
                       onClick={async () => {
                         await supabase
                           .from("resort_blocks" as any)
@@ -342,52 +365,53 @@ function AvailabilityCalendarTab() {
         </DialogContent>
       </Dialog>
 
+      {/* Selected Booking Detail Modal */}
       <Dialog open={!!selectedBooking} onOpenChange={(open) => !open && setSelectedBooking(null)}>
-        <DialogContent>
+        <DialogContent className="rounded-2xl max-w-md p-6">
           <DialogHeader>
-            <DialogTitle>Booking Details</DialogTitle>
+            <DialogTitle className="text-lg font-bold font-display">Reservation Quick View</DialogTitle>
           </DialogHeader>
           {selectedBooking && (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid gap-4 py-2">
+              <div className="grid grid-cols-2 gap-4 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
                 <div>
-                  <span className="font-semibold block text-muted-foreground">Guest Name</span>
-                  {selectedBooking.guest_name}
+                  <span className="font-bold uppercase tracking-wider text-slate-400 block mb-1">Guest Name</span>
+                  <span className="font-semibold text-slate-900 text-sm">{selectedBooking.guest_name}</span>
                 </div>
                 <div>
-                  <span className="font-semibold block text-muted-foreground">Contact</span>
-                  {selectedBooking.guest_phone}
+                  <span className="font-bold uppercase tracking-wider text-slate-400 block mb-1">Contact</span>
+                  <span className="font-semibold text-slate-900">{selectedBooking.guest_phone || selectedBooking.guest_email}</span>
                 </div>
                 <div>
-                  <span className="font-semibold block text-muted-foreground">Room</span>
-                  {selectedBooking.room?.name || selectedBooking.room_id}
+                  <span className="font-bold uppercase tracking-wider text-slate-400 block mb-1">Accommodation</span>
+                  <span className="font-semibold text-slate-900">{selectedBooking.room?.name || selectedBooking.room_id}</span>
                 </div>
                 <div>
-                  <span className="font-semibold block text-muted-foreground">Status</span>
-                  <Badge variant="outline" className="capitalize">
+                  <span className="font-bold uppercase tracking-wider text-slate-400 block mb-1">Booking Status</span>
+                  <Badge variant="outline" className="capitalize font-semibold">
                     {selectedBooking.status}
                   </Badge>
                 </div>
                 <div>
-                  <span className="font-semibold block text-muted-foreground">Check In</span>
-                  {selectedBooking.check_in}
+                  <span className="font-bold uppercase tracking-wider text-slate-400 block mb-1">Check In</span>
+                  <span className="font-semibold text-slate-800">{selectedBooking.check_in}</span>
                 </div>
                 <div>
-                  <span className="font-semibold block text-muted-foreground">Check Out</span>
-                  {selectedBooking.check_out}
+                  <span className="font-bold uppercase tracking-wider text-slate-400 block mb-1">Check Out</span>
+                  <span className="font-semibold text-slate-800">{selectedBooking.check_out}</span>
                 </div>
-                <div className="col-span-2">
-                  <span className="font-semibold block text-muted-foreground">Total Amount</span>
-                  <span className="text-primary font-bold text-lg">
+                <div className="col-span-2 pt-2 border-t border-slate-200 flex justify-between items-center">
+                  <span className="font-bold uppercase tracking-wider text-slate-500">Total Price</span>
+                  <span className="text-[#B38728] font-extrabold text-base font-display">
                     ₱{Number(selectedBooking.total_amount).toLocaleString()}
                   </span>
                 </div>
               </div>
 
               {selectedBooking.status === "pending" && (
-                <div className="flex gap-3 mt-4">
+                <div className="flex gap-3 mt-2">
                   <Button
-                    className="flex-1 bg-palm hover:bg-palm/90 text-white"
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl h-10"
                     onClick={async () => {
                       const { data: updatedBooking, error } = await supabase
                         .from("bookings")
@@ -396,29 +420,35 @@ function AvailabilityCalendarTab() {
                         .select("*, room:rooms(name, type)")
                         .single();
                       if (!error && updatedBooking) {
-                        toast.info("Sending email notification...");
                         supabase.functions
                           .invoke("booking-emails", {
                             body: { emailType: "status_update", bookingData: updatedBooking },
                           })
                           .then((res: { error: Error | null }) => {
-                            if (res.error) toast.error("Email failed: " + res.error.message);
-                            else toast.success("Email sent successfully!");
+                            if (res.error) {
+                              console.warn("Email notification failed:", res.error.message);
+                              toast.warning("Booking updated, but email notification could not be sent.");
+                            } else {
+                              toast.success("Email sent successfully!");
+                            }
                           })
-                          .catch((err: Error) => toast.error("Email system error: " + err.message));
+                          .catch((err: Error) => {
+                            console.warn("Email system error:", err.message);
+                            toast.warning("Booking updated, but email notification could not be sent.");
+                          });
                       }
-                      toast.success("Booking approved");
+                      toast.success("Booking confirmed");
                       setSelectedBooking(null);
                       refetch();
                       qc.invalidateQueries({ queryKey: ["admin-bookings"] });
                       qc.invalidateQueries({ queryKey: ["admin-stats"] });
                     }}
                   >
-                    Approve Booking
+                    Confirm Booking
                   </Button>
                   <Button
                     variant="destructive"
-                    className="flex-1"
+                    className="flex-1 font-bold rounded-xl h-10"
                     onClick={async () => {
                       const { data: updatedBooking, error } = await supabase
                         .from("bookings")
@@ -427,25 +457,31 @@ function AvailabilityCalendarTab() {
                         .select("*, room:rooms(name, type)")
                         .single();
                       if (!error && updatedBooking) {
-                        toast.info("Sending email notification...");
                         supabase.functions
                           .invoke("booking-emails", {
                             body: { emailType: "status_update", bookingData: updatedBooking },
                           })
                           .then((res: { error: Error | null }) => {
-                            if (res.error) toast.error("Email failed: " + res.error.message);
-                            else toast.success("Email sent successfully!");
+                            if (res.error) {
+                              console.warn("Email notification failed:", res.error.message);
+                              toast.warning("Booking updated, but email notification could not be sent.");
+                            } else {
+                              toast.success("Email sent successfully!");
+                            }
                           })
-                          .catch((err: Error) => toast.error("Email system error: " + err.message));
+                          .catch((err: Error) => {
+                            console.warn("Email system error:", err.message);
+                            toast.warning("Booking updated, but email notification could not be sent.");
+                          });
                       }
-                      toast.success("Booking rejected");
+                      toast.success("Booking cancelled");
                       setSelectedBooking(null);
                       refetch();
                       qc.invalidateQueries({ queryKey: ["admin-bookings"] });
                       qc.invalidateQueries({ queryKey: ["admin-stats"] });
                     }}
                   >
-                    Reject
+                    Cancel Booking
                   </Button>
                 </div>
               )}
@@ -453,6 +489,6 @@ function AvailabilityCalendarTab() {
           )}
         </DialogContent>
       </Dialog>
-    </Card>
+    </div>
   );
 }

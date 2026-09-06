@@ -1,11 +1,6 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5";
-  };
   public: {
     Tables: {
       bookings: {
@@ -20,12 +15,13 @@ export type Database = {
           id: string;
           room_id: string;
           special_requests: string | null;
-          status: Database["public"]["Enums"]["booking_status"];
+          status: Database["public"]["Enums"]["booking_status"] | "no-show" | string;
           total_amount: number;
           updated_at: string;
           user_id: string;
           booking_status: string | null;
           reservation_color: string | null;
+          deleted_at?: string | null;
         };
         Insert: {
           check_in: string;
@@ -38,12 +34,13 @@ export type Database = {
           id?: string;
           room_id: string;
           special_requests?: string | null;
-          status?: Database["public"]["Enums"]["booking_status"];
+          status?: Database["public"]["Enums"]["booking_status"] | "no-show" | string;
           total_amount: number;
           updated_at?: string;
           user_id: string;
           booking_status?: string | null;
           reservation_color?: string | null;
+          deleted_at?: string | null;
         };
         Update: {
           check_in?: string;
@@ -56,12 +53,13 @@ export type Database = {
           id?: string;
           room_id?: string;
           special_requests?: string | null;
-          status?: Database["public"]["Enums"]["booking_status"];
+          status?: Database["public"]["Enums"]["booking_status"] | "no-show" | string;
           total_amount?: number;
           updated_at?: string;
           user_id?: string;
           booking_status?: string | null;
           reservation_color?: string | null;
+          deleted_at?: string | null;
         };
         Relationships: [
           {
@@ -81,7 +79,7 @@ export type Database = {
           id: string;
           notes: string | null;
           receipt_url: string | null;
-          status: Database["public"]["Enums"]["payment_status"];
+          status: Database["public"]["Enums"]["payment_status"] | "unpaid" | string;
           updated_at: string;
           user_id: string;
         };
@@ -92,7 +90,7 @@ export type Database = {
           id?: string;
           notes?: string | null;
           receipt_url?: string | null;
-          status?: Database["public"]["Enums"]["payment_status"];
+          status?: Database["public"]["Enums"]["payment_status"] | "unpaid" | string;
           updated_at?: string;
           user_id: string;
         };
@@ -103,7 +101,7 @@ export type Database = {
           id?: string;
           notes?: string | null;
           receipt_url?: string | null;
-          status?: Database["public"]["Enums"]["payment_status"];
+          status?: Database["public"]["Enums"]["payment_status"] | "unpaid" | string;
           updated_at?: string;
           user_id?: string;
         };
@@ -216,6 +214,182 @@ export type Database = {
         };
         Relationships: [];
       };
+      feedbacks: {
+        Row: {
+          id: string;
+          booking_id: string;
+          user_id: string;
+          guest_name: string | null;
+          rating: number;
+          comment: string | null;
+          is_approved: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          booking_id: string;
+          user_id: string;
+          guest_name?: string | null;
+          rating: number;
+          comment?: string | null;
+          is_approved?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          booking_id?: string;
+          user_id?: string;
+          guest_name?: string | null;
+          rating?: number;
+          comment?: string | null;
+          is_approved?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      payment_audit_logs: {
+        Row: {
+          id: string;
+          payment_id: string | null;
+          booking_id: string | null;
+          admin_id: string | null;
+          admin_name: string | null;
+          action: string | null;
+          performed_by: string | null;
+          previous_status: string | null;
+          new_status: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          payment_id?: string | null;
+          booking_id?: string | null;
+          admin_id?: string | null;
+          admin_name?: string | null;
+          action?: string | null;
+          performed_by?: string | null;
+          previous_status?: string | null;
+          new_status?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          payment_id?: string | null;
+          booking_id?: string | null;
+          admin_id?: string | null;
+          admin_name?: string | null;
+          action?: string | null;
+          performed_by?: string | null;
+          previous_status?: string | null;
+          new_status?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      resort_blocks: {
+        Row: {
+          id: string;
+          start_date: string;
+          end_date: string;
+          reason: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          start_date: string;
+          end_date: string;
+          reason?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          start_date?: string;
+          end_date?: string;
+          reason?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      inquiries: {
+        Row: {
+          id: string;
+          customer_id: string | null;
+          name: string;
+          email: string;
+          message: string;
+          status: "unread" | "read" | "replied" | "waiting_reply" | string;
+          admin_reply: string | null;
+          replied_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          customer_id?: string | null;
+          name: string;
+          email: string;
+          message: string;
+          status?: "unread" | "read" | "replied" | "waiting_reply" | string;
+          admin_reply?: string | null;
+          replied_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          customer_id?: string | null;
+          name?: string;
+          email?: string;
+          message?: string;
+          status?: "unread" | "read" | "replied" | "waiting_reply" | string;
+          admin_reply?: string | null;
+          replied_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      inquiry_messages: {
+        Row: {
+          id: string;
+          inquiry_id: string;
+          sender_id: string | null;
+          sender_role: "customer" | "admin";
+          message: string;
+          created_at: string;
+          read_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          inquiry_id: string;
+          sender_id?: string | null;
+          sender_role: "customer" | "admin";
+          message: string;
+          created_at?: string;
+          read_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          inquiry_id?: string;
+          sender_id?: string | null;
+          sender_role?: "customer" | "admin";
+          message?: string;
+          created_at?: string;
+          read_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "inquiry_messages_inquiry_id_fkey";
+            columns: ["inquiry_id"];
+            isOneToOne: false;
+            referencedRelation: "inquiries";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -228,11 +402,21 @@ export type Database = {
         };
         Returns: boolean;
       };
+      get_approved_feedbacks: {
+        Args: Record<string, never>;
+        Returns: {
+          id: string;
+          rating: number;
+          comment: string | null;
+          guest_name: string;
+          created_at: string;
+        }[];
+      };
     };
     Enums: {
       app_role: "admin" | "customer";
-      booking_status: "pending" | "approved" | "rejected" | "cancelled" | "completed";
-      payment_status: "pending" | "verified" | "rejected";
+      booking_status: "pending" | "approved" | "rejected" | "cancelled" | "completed" | "no-show";
+      payment_status: "pending" | "verified" | "rejected" | "unpaid";
       room_type: "room" | "cottage" | "villa";
     };
     CompositeTypes: {
@@ -241,7 +425,7 @@ export type Database = {
   };
 };
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
+type DatabaseWithoutInternals = Database;
 
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">];
 
@@ -339,29 +523,12 @@ export type Enums<
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never;
 
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never;
-
 export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "customer"],
-      booking_status: ["pending", "approved", "rejected", "cancelled", "completed"],
-      payment_status: ["pending", "verified", "rejected"],
+      booking_status: ["pending", "approved", "rejected", "cancelled", "completed", "no-show"],
+      payment_status: ["pending", "verified", "rejected", "unpaid"],
       room_type: ["room", "cottage", "villa"],
     },
   },
