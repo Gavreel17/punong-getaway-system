@@ -81,7 +81,7 @@ function Dashboard() {
 
       if (inqErr || !inqs || inqs.length === 0) return 0;
 
-      const inqIds = inqs.map((i) => i.id);
+      const inqIds = inqs.map((i: { id: string }) => i.id);
 
       const { count, error: countErr } = await supabase
         .from("inquiry_messages")

@@ -447,7 +447,7 @@ function AdminSettingsPage() {
           "Status",
           "Created At",
         ];
-        const rows = bookings.map((b) => [
+        const rows = bookings.map((b: any) => [
           b.id,
           `"${(b.guest_name || "").replace(/"/g, '""')}"`,
           `"${(b.guest_email || "").replace(/"/g, '""')}"`,
@@ -459,7 +459,7 @@ function AdminSettingsPage() {
           b.created_at,
         ]);
 
-        const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join(
+        const csvContent = [headers.join(","), ...rows.map((r: any) => r.join(","))].join(
           "\n"
         );
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });

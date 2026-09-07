@@ -335,7 +335,7 @@ function getInquiryLatestTime(item: Inquiry): number {
               },
             },
           })
-          .catch((emailErr) => {
+          .catch((emailErr: unknown) => {
             console.warn("[Background Email Notice]:", emailErr);
           });
       } catch (e) {

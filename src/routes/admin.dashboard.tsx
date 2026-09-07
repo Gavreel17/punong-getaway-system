@@ -222,7 +222,6 @@ function AdminDashboard() {
   // ── Booking Status Breakdown ───────────────────────────────────────────
 
   const statusBreakdown = [
-    { label: "Awaiting Confirmation", count: pendingCount, icon: Clock, color: "text-amber-600 bg-amber-50 border-amber-200" },
     { label: "Confirmed / Active", count: approvedCount, icon: CheckCircle2, color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
     { label: "Cancelled", count: cancelledCount, icon: XCircle, color: "text-rose-500 bg-rose-50 border-rose-200" },
     { label: "Awaiting Payments", count: pendingPayments ?? 0, icon: AlertCircle, color: "text-orange-600 bg-orange-50 border-orange-200" },

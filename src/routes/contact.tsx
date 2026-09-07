@@ -35,7 +35,7 @@ function Contact() {
         .select("fullname, email")
         .eq("id", user.id)
         .single()
-        .then(({ data }) => {
+        .then(({ data }: { data: { fullname?: string | null; email?: string | null } | null }) => {
           if (data) {
             setForm((prev) => ({
               ...prev,
