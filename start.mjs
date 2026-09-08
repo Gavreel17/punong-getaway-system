@@ -17,20 +17,11 @@ if (!fs.existsSync(serverFile)) {
   console.log("[Server Launcher] .output/server/index.mjs not found.");
   console.log("[Server Launcher] Auto-building production bundle before starting...");
   try {
-    const buildCmd = fs.existsSync(path.resolve(__dirname, "bun.lock"))
-      ? "bun run build"
-      : "npm run build";
-    execSync(buildCmd, { stdio: "inherit", cwd: __dirname });
+    execSync("node build.mjs", { stdio: "inherit", cwd: __dirname });
     console.log("[Server Launcher] Build completed successfully.");
   } catch (err) {
-    console.warn("[Server Launcher] Preferred build command failed, falling back to npx vite build...");
-    try {
-      execSync("npx vite build", { stdio: "inherit", cwd: __dirname });
-      console.log("[Server Launcher] Fallback build completed successfully.");
-    } catch (fallbackErr) {
-      console.error("[Server Launcher] Build failed:", fallbackErr);
-      process.exit(1);
-    }
+    console.error("[Server Launcher] Build failed:", err);
+    process.exit(1);
   }
 }
 

@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "node build.mjs",
     "build:dev": "vite build --mode development",
     "start": "node start.mjs",
-    "postinstall": "node -e \"if (process.env.RENDER) { try { require('node:child_process').execSync('npx vite build', { stdio: 'inherit' }); } catch (e) { process.exit(1); } }\"",
+    "postinstall": "node -e \"if (process.env.RENDER) { try { require('node:child_process').execSync('node build.mjs', { stdio: 'inherit' }); } catch (e) { process.exit(1); } }\"",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write ."
