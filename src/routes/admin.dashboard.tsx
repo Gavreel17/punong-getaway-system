@@ -235,7 +235,7 @@ function AdminDashboard() {
     { label: "Rooms & Cottages", to: "/admin/rooms", icon: BedDouble, desc: "Manage availability" },
     { label: "Customers", to: "/admin/customers", icon: Users, desc: "Guest profiles" },
     { label: "Reports", to: "/admin/reports", icon: BarChart3, desc: "Analytics & exports" },
-    { label: "Cancellations", to: "/admin/cancellations", icon: XCircle, desc: "Process refunds" },
+    { label: "Cancelled", to: "/admin/cancellations", icon: XCircle, desc: "Process refunds" },
   ];
 
   // Never block the whole page — show skeleton KPIs while the primary query resolves.

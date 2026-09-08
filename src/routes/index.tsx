@@ -3,10 +3,11 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Waves, Utensils, Sparkles, Wifi, Car, Coffee, MapPin, Star, Bike, Sailboat } from "lucide-react";
+import { Waves, MapPin, Star, Bike, Sailboat } from "lucide-react";
 import hero from "@/assets/hero-resort.jpg";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useSystemSettings } from "@/hooks/use-system-settings";
 import gallery1 from "@/assets/gallery-1.jpg";
 import gallery2 from "@/assets/gallery-2.jpg";
 import gallery3 from "@/assets/gallery-3.jpg";
@@ -18,7 +19,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Book your tropical getaway at Punong Spring Resort. Beachfront rooms, cottages and function halls in BUBURAY, DIMATALING, ZAMBOANGA DEL SUR.",
+          "Book your tropical getaway at Punong Spring Resort. Beachfront rooms, cottages and function halls.",
       },
       { property: "og:title", content: "Punong Spring Resort" },
       {
@@ -37,6 +38,8 @@ const amenities = [
 ];
 
 function Index() {
+  const { settings } = useSystemSettings();
+
   const { data: feedbacks = [] } = useQuery({
     queryKey: ["approved-feedbacks"],
     queryFn: async () => {
@@ -69,16 +72,16 @@ function Index() {
       <section className="relative h-[88vh] min-h-[600px] w-full overflow-hidden">
         <img
           src="/hero-bg.jpg"
-          alt="Punong Spring Resort aerial view"
+          alt={`${settings.resort_name} view`}
           className="absolute inset-0 h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/60" />
         <div className="relative z-10 mx-auto flex h-full max-w-4xl flex-col items-center justify-center px-4 text-center text-white">
           <p className="mb-4 text-sm uppercase tracking-[0.3em] text-white/80">
-            BUBURAY, DIMATALING, ZAMBOANGA DEL SUR
+            {settings.address}
           </p>
           <h1 className="font-display text-5xl font-bold leading-tight md:text-7xl">
-            Punong Spring Resort
+            {settings.resort_name}
           </h1>
           <p className="mt-4 text-lg italic text-white/90 md:text-2xl">
             Relax, Reserve, and Enjoy Your Stay
@@ -190,12 +193,11 @@ function Index() {
           <div>
             <h2 className="text-4xl font-bold">Find your way to us</h2>
             <p className="mt-4 text-white/90">
-              Tucked between palm groves and powdery white sand on BUBURAY, DIMATALING, ZAMBOANGA DEL
-              SUR's coast.
+              Tucked between palm groves and serene natural landscapes at {settings.address}.
             </p>
             <div className="mt-6 space-y-3 text-white/90">
               <p className="flex items-center gap-3">
-                <MapPin className="h-5 w-5" /> Coastal Road, BUBURAY, DIMATALING, ZAMBOANGA DEL SUR
+                <MapPin className="h-5 w-5 shrink-0 text-accent" /> {settings.address}
               </p>
             </div>
             <Button
@@ -209,7 +211,7 @@ function Index() {
           <div className="overflow-hidden rounded-2xl shadow-elegant">
             <iframe
               title="Location map"
-              src="https://www.openstreetmap.org/export/embed.html?bbox=123.30%2C7.45%2C123.42%2C7.55&layer=mapnik&marker=7.4973%2C123.3656"
+              src={`https://maps.google.com/maps?q=${encodeURIComponent(settings.address)}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
               className="h-80 w-full border-0"
               loading="lazy"
             />

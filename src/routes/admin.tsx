@@ -116,7 +116,7 @@ function AdminLayout() {
     { label: "Dashboard", to: "/admin/dashboard", icon: LayoutDashboard },
     { label: "Calendar", to: "/admin/calendar", icon: CalendarIcon },
     { label: "Bookings & Payments", to: "/admin/bookings", icon: CalendarCheck, badge: pendingPaymentsCount },
-    { label: "Cancellations", to: "/admin/cancellations", icon: CalendarCheck },
+    { label: "Cancelled", to: "/admin/cancellations", icon: CalendarCheck },
     { label: "Rooms & Cottages", to: "/admin/rooms", icon: BedDouble },
     { label: "Customers", to: "/admin/customers", icon: Users },
     { label: "Messages & Inquiries", to: "/admin/messages", icon: Mail, badge: unreadInquiriesCount },

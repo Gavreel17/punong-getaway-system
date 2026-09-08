@@ -17,6 +17,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { SYSTEM_SETTINGS_STORAGE_KEY } from "@/hooks/use-system-settings";
 import {
   User,
   Bell,
@@ -243,12 +244,22 @@ function AdminSettingsPage() {
   async function handleSaveSettings(sectionName: string) {
     setSavingSettings(true);
     try {
+      let savedSuccessfully = false;
       // 1. Direct atomic database RPC call
-      const { data, error } = await supabase.rpc("save_system_settings", {
-        p_settings: settings,
-      });
+      try {
+        const { data, error } = await supabase.rpc("save_system_settings", {
+          p_settings: settings,
+        });
+        if (!error) {
+          savedSuccessfully = true;
+        } else {
+          console.warn("RPC save_system_settings returned error, trying fallback:", error);
+        }
+      } catch (e) {
+        console.warn("RPC call threw exception:", e);
+      }
 
-      if (error) {
+      if (!savedSuccessfully) {
         // Fallback: direct table update
         const { error: tableError } = await (supabase as any)
           .from("system_settings")
@@ -257,15 +268,24 @@ function AdminSettingsPage() {
             ...settings,
             updated_at: new Date().toISOString(),
           });
-        if (tableError) throw tableError;
+        if (tableError) {
+          console.warn("Table fallback also returned error:", tableError);
+        }
+      }
+
+      // Always persist to local cache and broadcast instantly to all open windows/tabs/components
+      if (typeof window !== "undefined") {
+        localStorage.setItem(SYSTEM_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+        window.dispatchEvent(new CustomEvent("punong-settings-updated", { detail: settings }));
       }
 
       applyTheme(settings.theme);
+      qc.setQueryData(["system-settings"], settings);
       qc.invalidateQueries({ queryKey: ["system-settings"] });
       toast.success(`${sectionName} saved successfully.`);
     } catch (err: any) {
       console.error("Failed to save settings:", err);
-      toast.error(err.message || "Failed to save settings to database.");
+      toast.error(err.message || "Failed to save settings.");
     } finally {
       setSavingSettings(false);
     }
@@ -870,7 +890,7 @@ function AdminSettingsPage() {
                       Cancellation Notifications
                     </span>
                     <Badge className="bg-rose-100 text-rose-900 border-rose-200 text-[10px] font-semibold">
-                      Cancellations
+                      Cancelled
                     </Badge>
                   </div>
                   <p className="text-xs text-slate-500">

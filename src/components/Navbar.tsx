@@ -3,10 +3,12 @@ import { Palmtree, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
+import { useSystemSettings } from "@/hooks/use-system-settings";
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
   const { user, role, signOut } = useAuth();
+  const { settings } = useSystemSettings();
   const navigate = useNavigate();
 
   const links = [
@@ -24,7 +26,7 @@ export function Navbar() {
           className="flex items-center gap-2 font-display text-base sm:text-xl font-bold text-primary truncate"
         >
           <Palmtree className="h-5 w-5 sm:h-6 sm:w-6 text-accent shrink-0" />
-          <span className="truncate">Punong Spring Resort</span>
+          <span className="truncate">{settings.resort_name}</span>
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">

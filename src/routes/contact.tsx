@@ -11,6 +11,7 @@ import { Mail, Phone, MapPin, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useSystemSettings } from "@/hooks/use-system-settings";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/contact")({
 
 function Contact() {
   const { user } = useAuth();
+  const { settings } = useSystemSettings();
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [submitting, setSubmitting] = useState(false);
 
@@ -123,26 +125,34 @@ function Contact() {
       <section className="container mx-auto grid max-w-5xl gap-8 px-4 py-16 md:grid-cols-2">
         <div className="space-y-4">
           <div className="flex items-start gap-3">
-            <MapPin className="mt-1 h-5 w-5 text-accent" />
+            <MapPin className="mt-1 h-5 w-5 text-accent shrink-0" />
             <div>
               <p className="font-semibold">Address</p>
               <p className="text-sm text-muted-foreground">
-                Coastal Road, BUBURAY, DIMATALING, ZAMBOANGA DEL SUR
+                {settings.address}
               </p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <Phone className="mt-1 h-5 w-5 text-accent" />
+            <Phone className="mt-1 h-5 w-5 text-accent shrink-0" />
             <div>
               <p className="font-semibold">Phone</p>
-              <p className="text-sm text-muted-foreground">+63 917 123 4567</p>
+              <p className="text-sm text-muted-foreground">
+                <a href={`tel:${settings.contact_number}`} className="hover:underline">
+                  {settings.contact_number}
+                </a>
+              </p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <Mail className="mt-1 h-5 w-5 text-accent" />
+            <Mail className="mt-1 h-5 w-5 text-accent shrink-0" />
             <div>
               <p className="font-semibold">Email</p>
-              <p className="text-sm text-muted-foreground">hello@punongresort.com</p>
+              <p className="text-sm text-muted-foreground">
+                <a href={`mailto:${settings.contact_email}`} className="hover:underline">
+                  {settings.contact_email}
+                </a>
+              </p>
             </div>
           </div>
         </div>
