@@ -467,8 +467,8 @@ export function AvailabilityCalendarTab() {
     if (!bookingForm.guest_name.trim()) return toast.error("Guest name is required");
     if (!bookingForm.check_in || !bookingForm.check_out)
       return toast.error("Check-in and Check-out dates are required");
-    if (bookingForm.check_out <= bookingForm.check_in)
-      return toast.error("Check-out date must be after Check-in date");
+    if (bookingForm.check_out < bookingForm.check_in)
+      return toast.error("Check-out date cannot be before Check-in date");
 
     // Double-booking check
     const conflict = bookings.find((b: any) => {

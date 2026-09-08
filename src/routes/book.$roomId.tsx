@@ -459,7 +459,11 @@ function BookPage() {
                     let check_in = "";
                     let check_out = "";
                     if (range?.from) check_in = format(range.from, "yyyy-MM-dd");
-                    if (range?.to) check_out = format(range.to, "yyyy-MM-dd");
+                    if (range?.to) {
+                      check_out = format(range.to, "yyyy-MM-dd");
+                    } else if (range?.from && room?.type === "cottage") {
+                      check_out = check_in;
+                    }
                     setForm((f) => ({ ...f, check_in, check_out }));
                   }}
                   disabled={(date) => getDayStatus(date).status === "booked" || date < today}
